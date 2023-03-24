@@ -39,6 +39,6 @@ build-container:
 
 benchmark-container:
 	mkdir -p "$(top_builddir)/dockerbuild"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/resolvelocal:ro" -v "$(top_builddir)/dockerbuild:/install" $(CONTAINER) /src/resolvelocal/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
+	docker run --rm -it -v "$(realpath $(srcdir)):/src/resolvelocal:ro" -v "$(top_builddir)/last:/src/resolvelocal" $(CONTAINER) /src/resolvelocal/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
 
 .PHONY: vim-gdb vim-core pgo coverage benchmark test-container build-container benchmark-container
