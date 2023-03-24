@@ -210,6 +210,7 @@ proc bench {name desc args} { #<<<
 				apply $output notice "Skipping variant $current_bench/$variant: $errmsg"
 				continue
 			}
+			# Verify the first result against -result (if given), and estimate an appropriate batchsize to target a batch time of 1 ms to reduce quantization noise <<<
 			set hint	[lindex [time {
 				catch {uplevel 1 $script} r o
 			}] 0]
@@ -220,6 +221,7 @@ proc bench {name desc args} { #<<<
 				set expected	$opts(-result)
 			}
 			if {[info exists expected]} {
+				#apply $output debug "Verifying expected output for $current_bench/$variant"
 				_verify_res $variant $normalized_codes $expected $opts(-match) $r $o
 			}
 
@@ -231,7 +233,6 @@ proc bench {name desc args} { #<<<
 			set single_overhead	[lindex [time $single_empty 1000] 0]
 			#puts stderr "single overhead: $single_overhead"
 
-			# Verify the first result against -result (if given), and estimate an appropriate batchsize to target a batch time of 1 ms to reduce quantization noise <<<
 			set est_it	[expr {
 				max(1, int(round(
 					100.0/$hint
@@ -255,12 +256,14 @@ proc bench {name desc args} { #<<<
 			#>>>
 
 			# Measure the instrumentation overhead to compensate for it <<<
+			#apply $output debug "Measuring overhead for $current_bench/$variant"
 			set times	{}
 			set start	[clock microseconds]	;# Prime [clock microseconds], start var
 			set overhead_script	[join [_pick all $variant $opts(-overhead)] \n]
 			set bscript	[apply $make_script $batch $overhead_script]
-			uplevel 1 $script
-			for {set i 0} {$i < int(100000 / ($batch*0.15))} {incr i} {
+			set est	[lindex [time {uplevel 1 $bscript} 1] 0]
+			#apply $output debug "Initial overhead estimate: $est"
+			for {set i 0} {$i < int(100000 / $est)} {incr i} {
 				set start [clock microseconds]
 				uplevel 1 $bscript
 				lappend times [- [clock microseconds] $start]
