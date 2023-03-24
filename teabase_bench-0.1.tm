@@ -477,7 +477,12 @@ proc run_benchmarks {dir args} { #<<<
 
 	set stats	{}
 	foreach f [glob -nocomplain -type f -dir $dir -tails *.bench] {
-		uplevel 1 [list source [file join $dir $f]]
+		try {
+			namespace eval _bench_private {namespace path {::teabase_bench}}
+			namespace eval _bench_private [list source [file join $dir $f]]
+		} finally {
+			namespace delete _bench_private
+		}
 	}
 
 	set save {{save_fn run} {
