@@ -164,10 +164,11 @@ proc bench {name desc args} { #<<<
 		-min_it			30
 		-window			30
 		-overhead		{}
+		-deps			{}
 	}
 	array set opts $args
 	set badargs [lindex [_intersect3 [array names opts] {
-		-setup -compare -cleanup -batch -match -result -results -returnCodes -target_cv -min_time -max_time -min_it -window -overhead
+		-setup -compare -cleanup -batch -match -result -results -returnCodes -target_cv -min_time -max_time -min_it -window -overhead -deps
 	}] 0]
 
 	if {[llength $badargs] > 0} {
@@ -203,6 +204,10 @@ proc bench {name desc args} { #<<<
 	_run_if_set $opts(-setup)
 	try {
 		dict for {variant script} $opts(-compare) {
+			try [join [_pick all $variant $opts(-deps)] \n] on error {errmsg options} {
+				apply $output notice "Skipping variant $current_bench/$variant: $errmsg"
+				continue
+			}
 			set hint	[lindex [time {
 				catch {uplevel 1 $script} r o
 			}] 0]
@@ -420,6 +425,7 @@ proc run_benchmarks {dir args} { #<<<
 	set relative			{}
 	set display_mode		short
 	set display_mode_args	{}
+	set rundata				.
 
 	set consume_args [list  \
 		count {
@@ -440,6 +446,10 @@ proc run_benchmarks {dir args} { #<<<
 		lassign [apply $consume_args 1] next
 
 		switch -- $next {
+			-rundata {
+				lassign [apply $consume_args 1] rundata
+			}
+
 			-load {
 				lassign [apply $consume_args 1] load_script
 				namespace eval :: $load_script
@@ -451,13 +461,15 @@ proc run_benchmarks {dir args} { #<<<
 
 			-relative {
 				lassign [apply $consume_args 2] label rel_fn
+				set rel_fn	[file join $rundata $rel_fn]
 				if {[file readable $rel_fn]} {
-					dict set relative $label [_readfile $rel_fn]
+					dict set relative $label [_readfile [file join $rundata $rel_fn]]
 				}
 			}
 
 			-save {
 				lassign [apply $consume_args 1] save_fn
+				set save_fn	[file join $rundata $save_fn]
 			}
 
 			-display {
@@ -501,7 +513,7 @@ proc run_benchmarks {dir args} { #<<<
 		_writefile $save_fn $save_data
 	} [namespace current]]
 
-	apply $save last $run	;# Always save as "last", even if explicitly saving as something else too
+	apply $save [file join $rundata last] $run	;# Always save as "last", even if explicitly saving as something else too
 	if {[info exists save_fn]} {
 		apply $save $save_fn $run
 	}

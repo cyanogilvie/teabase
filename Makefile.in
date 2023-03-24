@@ -38,8 +38,8 @@ build-container:
 	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" -v "$(top_builddir)/dockerbuild:/install" $(CONTAINER) /src/local/teabase/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
 
 benchmark-container:
-	mkdir -p "$(top_builddir)/dockerbuild"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" $(CONTAINER) /src/local/teabase/dbench.tcl "$(TESTFLAGS)" "$(CONFIGUREFLAGS)"
+	mkdir -p "$(top_builddir)/rundata"
+	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" -v "$(realpath $(srcdir))/rundata:/src/local/rundata" $(CONTAINER) /src/local/teabase/dbench.tcl "-rundata /src/local/rundata $(TESTFLAGS)" "$(CONFIGUREFLAGS)"
 
 #doc: doc/reuri.n README.md
 #
