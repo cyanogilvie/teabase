@@ -25,7 +25,7 @@ vim-gdb: binaries libraries
 
 pgo:
 	rm -rf prof
-	make -C . PGO="$(PGOGEN_BUILD)" clean binaries libraries benchmark
+	make -C . PGO="$(PGOGEN_BUILD)" clean binaries libraries test benchmark
 	make -C . PGO="$(PGO_BUILD)" clean binaries libraries
 
 coverage:

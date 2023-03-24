@@ -1,6 +1,6 @@
-builtin(include,ax_gcc_builtin.m4)
-builtin(include,ax_cc_for_build.m4)
-builtin(include,ax_check_compile_flag.m4)
+builtin(include,teabase/ax_gcc_builtin.m4)
+builtin(include,teabase/ax_cc_for_build.m4)
+builtin(include,teabase/ax_check_compile_flag.m4)
 
 AC_DEFUN([ENABLE_DEBUG], [
 	#trap 'echo "val: (${enable_debug+set}), debug_ok: ($debug_ok), DEBUG: ($DEBUG)"' DEBUG
