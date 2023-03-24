@@ -17,5 +17,5 @@ foreach file {
 	exec cp -a [file join /src/resolvelocal $file] .
 }
 exec -ignorestderr autoconf >@ stdout
-exec -ignorestderr ./configure --enable-symbols --with-tcl=/usr/local/lib >@ stdout
+exec -ignorestderr ./configure {*}[lindex $argv 1] --with-tcl=/usr/local/lib >@ stdout
 exec -ignorestderr make clean benchmark TESTFLAGS=[lindex $argv 0] >@ stdout
