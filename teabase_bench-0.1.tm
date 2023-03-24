@@ -6,6 +6,7 @@ namespace eval ::teabase_bench {
 	variable match		*
 	variable run		{}
 	variable skipped	{}
+	variable skip		{}
 
 	# Override this to a new lambda to capture the output
 	variable output {
@@ -141,6 +142,7 @@ proc _make_stats times { #<<<
 #>>>
 proc bench {name desc args} { #<<<
 	variable match
+	variable skip
 	variable run
 	variable skipped
 	variable output
@@ -175,7 +177,7 @@ proc bench {name desc args} { #<<<
 		error "Unrecognised arguments: [join $badargs {, }]"
 	}
 
-	if {![string match $match $name]} {
+	if {![string match $match $name] || [string match $skip $name]} {
 		lappend skipped $name
 		return
 	}
@@ -419,9 +421,11 @@ proc run_benchmarks {dir args} { #<<<
 	variable skipped
 	variable run
 	variable match
+	variable skip
 	variable output
 
 	set match				*
+	set skip				{}
 	set relative			{}
 	set display_mode		short
 	set display_mode_args	{}
@@ -457,6 +461,10 @@ proc run_benchmarks {dir args} { #<<<
 
 			-match {
 				lassign [apply $consume_args 1] match
+			}
+
+			-skip {
+				lassign [apply $consume_args 1] skip
 			}
 
 			-relative {
