@@ -31,15 +31,15 @@ coverage:
 	make -C . PGO="--coverage" clean binaries libraries test
 
 test-container:
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/resolvelocal:ro" $(CONTAINER) /src/resolvelocal/dtest.tcl "$(TESTFLAGS)"
+	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" $(CONTAINER) /src/local/teabase/dtest.tcl "$(TESTFLAGS)"
 
 build-container:
 	mkdir -p "$(top_builddir)/dockerbuild"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/resolvelocal:ro" -v "$(top_builddir)/dockerbuild:/install" $(CONTAINER) /src/resolvelocal/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
+	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" -v "$(top_builddir)/dockerbuild:/install" $(CONTAINER) /src/local/teabase/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
 
 benchmark-container:
 	mkdir -p "$(top_builddir)/dockerbuild"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/resolvelocal:ro" $(CONTAINER) /src/resolvelocal/dbuild.tcl "$(TESTFLAGS)" "$(CONFIGUREFLAGS)"
+	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" $(CONTAINER) /src/local/teabase/dbench.tcl "$(TESTFLAGS)" "$(CONFIGUREFLAGS)"
 
 #doc: doc/reuri.n README.md
 #

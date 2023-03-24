@@ -29,7 +29,7 @@ foreach file {
 	Makefile.in
 	teabase
 } {
-	exec cp -a [file join /src/resolvelocal $file] .
+	exec cp -a [file join /src/local $file] .
 }
 exec -ignorestderr autoconf >@ stdout
 exec -ignorestderr ./configure --enable-symbols --with-tcl=/usr/local/lib >@ stdout
