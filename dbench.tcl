@@ -20,5 +20,15 @@ foreach file {
 	}
 }
 exec -ignorestderr autoconf >@ stdout
-exec -ignorestderr ./configure {*}[lindex $argv 1] --with-tcl=/usr/local/lib >@ stdout
-exec -ignorestderr make clean benchmark TESTFLAGS=[lindex $argv 0] >@ stdout
+puts "configure args: ([lindex $argv 1])"
+# Without --enable-symbols, tcl.m4 hard codes the flags in tclConfig.sh's CFLAGS_OPTIMIZE /after/ any value we can configure
+exec -ignorestderr ./configure --enable-symbols {*}[lindex $argv 1] --with-tcl=/usr/local/lib >@ stdout
+switch -- [lindex $argv 2] {
+	pgo {
+		exec -ignorestderr make clean pgo >@ stdout
+		exec -ignorestderr make benchmark BENCHFLAGS=[lindex $argv 0] >@ stdout
+	}
+	default {
+		exec -ignorestderr make clean benchmark BENCHFLAGS=[lindex $argv 0] >@ stdout
+	}
+}
