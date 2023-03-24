@@ -1,6 +1,6 @@
 package require math::statistics
 
-namespace eval teabase_bench {
+namespace eval ::teabase_bench {
 	namespace export *
 
 	variable match		*
@@ -485,7 +485,7 @@ proc run_benchmarks {dir args} { #<<<
 		}
 	}
 
-	set save {{save_fn run} {
+	set save [list {save_fn run} {
 		set save_data	$run
 		if {[file readable $save_fn]} {
 			# If the save file already exists, merge this run's data with it
@@ -499,7 +499,7 @@ proc run_benchmarks {dir args} { #<<<
 			}
 		}
 		_writefile $save_fn $save_data
-	}}
+	} [namespace current]]
 
 	apply $save last $run	;# Always save as "last", even if explicitly saving as something else too
 	if {[info exists save_fn]} {
