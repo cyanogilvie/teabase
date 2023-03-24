@@ -9,7 +9,7 @@ PGO=
 
 CONTAINER = cyanogilvie/alpine-tcl:v0.9.66-gdb
 
-CFLAGS		= @CFLAGS@ $(PGO)
+CFLAGS		= $(CFLAGS) $(PGO)
 
 benchmark: binaries libraries
 	$(TCLSH) `@CYGPATH@ $(srcdir)/bench/run.tcl` $(TESTFLAGS) -load package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ load\ `@CYGPATH@ $(PKG_LIB_FILE)`\ [string\ totitle\ $(PACKAGE_NAME)]]

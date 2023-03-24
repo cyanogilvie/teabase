@@ -2,6 +2,14 @@ builtin(include,teabase/ax_gcc_builtin.m4)
 builtin(include,teabase/ax_cc_for_build.m4)
 builtin(include,teabase/ax_check_compile_flag.m4)
 
+AC_DEFUN([TEABASE_INIT], [
+	# Test for -fprofile-partial-training, introduced in GCC 10
+	AX_CHECK_COMPILE_FLAG([-fprofile-partial-training],
+						[AC_SUBST(PGO_BUILD,"-fprofile-use=prof -fprofile-partial-training")],
+						[AC_SUBST(PGO_BUILD,"-fprofile-use=prof")],
+						[-Werror])
+])
+
 AC_DEFUN([ENABLE_DEBUG], [
 	#trap 'echo "val: (${enable_debug+set}), debug_ok: ($debug_ok), DEBUG: ($DEBUG)"' DEBUG
 	AC_MSG_CHECKING([whether to support debuging])
