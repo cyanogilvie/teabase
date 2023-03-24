@@ -29,4 +29,10 @@ pgo:
 coverage:
 	make -C . PGO="--coverage" clean binaries libraries test
 
+test-container:
+	docker run --rm -it --platform $(PLATFORM) -v "$(realpath $(srcdir)):/src/resolvelocal:ro" cyanogilvie/alpine-tcl:v0.9.66-gdb /src/resolvelocal/dtest.tcl "$(TESTFLAGS)"
+
+build-container:
+	mkdir -p "$(top_builddir)/dockerbuild"
+	docker run --rm -it --platform $(PLATFORM) -v "$(realpath $(srcdir)):/src/resolvelocal:ro" -v "$(top_builddir)/dockerbuild:/install" cyanogilvie/alpine-tcl:v0.9.66-gdb /src/resolvelocal/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
 .PHONY: vim-gdb vim-core pgo coverage benchmark
