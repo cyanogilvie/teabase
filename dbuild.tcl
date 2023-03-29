@@ -18,17 +18,7 @@ switch -glob -- [platform::generic] {
 
 file mkdir /tmp/build
 cd /tmp/build
-foreach file {
-	aclocal.m4
-	configure.ac
-	tclconfig
-	generic
-	library
-	tests
-	pkgIndex.tcl.in
-	Makefile.in
-	teabase
-} {
+foreach file [glob -nocomplain /src/local/*] {
 	set fqfn	[file join /src/local $file]
 	if {[file exists $fqfn]} {
 		exec cp -a $fqfn .
