@@ -26,6 +26,7 @@ foreach file [glob -nocomplain /src/local/*] {
 }
 exec -ignorestderr autoconf >@ stdout
 exec -ignorestderr ./configure --enable-symbols --with-tcl=/usr/local/lib >@ stdout
+file delete -- {*}[glob -nocomplain tools/bin/*]
 exec -ignorestderr make clean install-binaries install-libraries DESTDIR=/tmp/install >@ stdout
 set target	[file join /install [platform::generic]]
 file mkdir $target
