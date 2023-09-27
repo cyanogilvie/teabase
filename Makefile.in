@@ -8,11 +8,13 @@ PGO_BUILD = @PGO_BUILD@
 PGO=
 CFLAGS		+= $(PGO)
 CONFIGUREFLAGS	= {CFLAGS=-O3 -flto -march=native}
+PACKAGE_LOAD = "package ifneeded $(PACKAGE_NAME) $(PACKAGE_VERSION) [list apply {{} {load `@CYGPATH@ $(PKG_LIB_FILE)` $(PACKAGE_NAME); ::$(PACKAGE_NAME)::_setdir `@CYGPATH@ $(srcdir)`}}]"
+PACKAGE_LOAD_EMBED = "package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ apply\ {{}\ {load\ `@CYGPATH@ $(PKG_LIB_FILE)`\ $(PACKAGE_NAME);\ ::$(PACKAGE_NAME)::_setdir\ `@CYGPATH@ $(srcdir)`}}]"
 
 CONTAINER = cyanogilvie/alpine-tcl:v0.9.66-gdb
 
 benchmark: binaries libraries
-	$(TCLSH) `@CYGPATH@ $(srcdir)/bench/run.tcl` $(BENCHFLAGS) -load package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ load\ `@CYGPATH@ $(PKG_LIB_FILE)`\ [string\ totitle\ $(PACKAGE_NAME)]]
+	$(TCLSH) `@CYGPATH@ $(srcdir)/bench/run.tcl` $(BENCHFLAGS) -load $(PACKAGE_LOAD)
 
 tags: generic/*
 	ctags-exuberant generic/*
@@ -21,7 +23,7 @@ vim-core:
 	$(TCLSH_ENV) $(PKG_ENV) vim -c 'packadd termdebug' -c "set mouse=a" -c "set number" -c "set foldlevel=100" -c "Termdebug $(TCLSH_PROG) core" -c Winbar generic/
 
 vim-gdb: binaries libraries
-	$(TCLSH_ENV) $(PKG_ENV) vim -c "set number" -c "set mouse=a" -c "set foldlevel=100" -c "Termdebug -ex set\ print\ pretty\ on --args $(TCLSH_PROG) tests/all.tcl $(TESTFLAGS) -singleproc 1 -load package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ load\ `@CYGPATH@ $(PKG_LIB_FILE)`\ [string\ totitle\ $(PACKAGE_NAME)]]" -c "2windo set nonumber" -c "1windo set nonumber" generic/
+	$(TCLSH_ENV) $(PKG_ENV) vim -c "set number" -c "set mouse=a" -c "set foldlevel=100" -c "Termdebug -ex set\ print\ pretty\ on --args $(TCLSH_PROG) tests/all.tcl $(TESTFLAGS) -singleproc 1 -load $(PACKAGE_LOAD_EMBED)" -c "2windo set nonumber" -c "1windo set nonumber" generic/
 
 pgo:
 	rm -rf prof
