@@ -39,8 +39,11 @@ typedef union Tcl_ObjInternalRep {
 #	else
 static inline void Tcl_FreeInternalRep(Tcl_Obj* obj)
 {
-	if (obj->typePtr && obj->typePtr->freeIntRepProc)
-		obj->typePtr->freeIntRepProc(obj);
+	if (obj->typePtr) {
+		if (obj->typePtr && obj->typePtr->freeIntRepProc)
+			obj->typePtr->freeIntRepProc(obj);
+		obj->typePtr = NULL;
+	}
 }
 #	endif
 #endif
