@@ -71,6 +71,15 @@
 		} \
 	} while(0);
 
+#define CHECK_RANGE_ARGS_LABEL(label, rc, msg) \
+	do { \
+		if (objc < A_args || objc > A_objc) { \
+			Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg); \
+			rc = TCL_ERROR; \
+			goto label; \
+		} \
+	} while(0);
+
 
 // A rather frivolous macro that just enhances readability for a common case
 #define TEST_OK( cmd )		\
