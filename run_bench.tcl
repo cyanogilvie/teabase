@@ -1,8 +1,5 @@
 # vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
 
-set big	[string repeat a [expr {int(1e8)}]]	;# Allocate 100MB to pre-expand the zippy pool
-unset big
-
 set this_script	[file normalize [info script]]
 set seen	{}
 while {[file type $this_script] eq "link"} {

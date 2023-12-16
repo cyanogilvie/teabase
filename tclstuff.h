@@ -49,23 +49,33 @@
 // not include the objv[0] object (the function itself)
 #define CHECK_ARGS(expected, msg)										\
 	if (objc != expected + 1) {											\
-		Tcl_WrongNumArgs(interp, 1, objv, msg);							\
+		Tcl_WrongNumArgs(interp, 1, objv, sizeof(msg) > 1 ? msg : NULL);\
 		return TCL_ERROR;												\
 	}
 
-#define CHECK_ARGS_LABEL(label, rc, msg) \
+#define CHECK_ARGS_LABEL2(label, rc) \
 	do { \
 		if (objc != A_objc) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg); \
+			Tcl_WrongNumArgs(interp, A_cmd+1, objv, NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
 	} while(0);
+#define CHECK_ARGS_LABEL3(label, rc, msg) \
+	do { \
+		if (objc != A_objc) { \
+			Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
+			rc = TCL_ERROR; \
+			goto label; \
+		} \
+	} while(0);
+#define GET_CHECK_ARGS_LABEL_MACRO(_1,_2,_3,NAME,...) NAME
+#define CHECK_ARGS_LABEL(...) GET_CHECK_ARGS_LABEL_MACRO(__VA_ARGS__, CHECK_ARGS_LABEL3, CHECK_ARGS_LABEL2)(__VA_ARGS__)
 
 #define CHECK_MIN_ARGS_LABEL(label, rc, msg) \
 	do { \
 		if (objc < A_args) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg); \
+			Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
@@ -74,7 +84,7 @@
 #define CHECK_RANGE_ARGS_LABEL(label, rc, msg) \
 	do { \
 		if (objc < A_args || objc > A_objc) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg); \
+			Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
