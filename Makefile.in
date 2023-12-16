@@ -1,7 +1,7 @@
 VALGRINDEXTRA =
 VALGRINDARGS	= --tool=memcheck --num-callers=8 --leak-resolution=high \
 		  --leak-check=yes -v --suppressions=suppressions --keep-debuginfo=yes \
-		  --trace-children=yes $(VALGRINDEXTRA)
+		  --trace-children=yes --error-exitcode=2 $(VALGRINDEXTRA)
 
 PGOGEN_BUILD = -fprofile-generate=prof
 PGO_BUILD = @PGO_BUILD@
