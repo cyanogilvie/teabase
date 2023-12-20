@@ -8,8 +8,8 @@ PGO_BUILD = @PGO_BUILD@
 PGO=
 CFLAGS		+= $(PGO)
 CONFIGUREFLAGS	= {CFLAGS=-O3 -flto -march=native}
-PACKAGE_LOAD = "package ifneeded $(PACKAGE_NAME) $(PACKAGE_VERSION) [list apply {dir {load `@CYGPATH@ $(PKG_LIB_FILE)` $(PACKAGE_NAME)}} `@CYGPATH@ $(srcdir)`]"
-PACKAGE_LOAD_EMBED = package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ apply\ {dir\ {load\ `@CYGPATH@ $(PKG_LIB_FILE)`\ $(PACKAGE_NAME)}}\ `@CYGPATH@ $(srcdir)`]
+PACKAGE_LOAD = "package ifneeded $(PACKAGE_NAME) $(PACKAGE_VERSION) [list apply {dir {load [file join $$dir $(PKG_LIB_FILE)] $(PACKAGE_NAME)}} `@CYGPATH@ $(srcdir)`]"
+PACKAGE_LOAD_EMBED = package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ apply\ {dir\ {load\ [file\ join\ $$dir\ $(PKG_LIB_FILE)]\ $(PACKAGE_NAME)}}\ `@CYGPATH@ $(srcdir)`]
 
 CONTAINER = cyanogilvie/alpine-tcl:v0.9.66-gdb
 
