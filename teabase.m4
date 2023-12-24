@@ -150,3 +150,9 @@ AC_DEFUN([DEDUP_STUBS], [
 	fi
 ])
 
+AC_DEFUN([REURI_STUBS], [
+	if test "${STUBS_BUILD}" = "1"; then
+		AC_DEFINE(USE_REURI_STUBS, 1, [Use ReURI Stubs])
+	fi
+])
+

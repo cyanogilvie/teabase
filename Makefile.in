@@ -17,13 +17,16 @@ benchmark: binaries libraries
 	$(TCLSH) `@CYGPATH@ $(srcdir)/bench/run.tcl` $(BENCHFLAGS) -load $(PACKAGE_LOAD)
 
 tags: generic/*
-	ctags-exuberant -langmap=c:+.re generic/*
+	ctags-exuberant --langmap=c:+.re generic/*
 
 vim-core:
 	$(TCLSH_ENV) $(PKG_ENV) vim -c 'packadd termdebug' -c "set mouse=a" -c "set number" -c "set foldlevel=100" -c "Termdebug $(TCLSH_PROG) core" -c Winbar generic/
 
 vim-gdb: binaries libraries
 	$(TCLSH_ENV) $(PKG_ENV) vim -c "set number" -c "set mouse=a" -c "set foldlevel=100" -c "Termdebug -ex set\ print\ pretty\ on --args $(TCLSH_PROG) tests/all.tcl -singleproc 1 -load $(PACKAGE_LOAD_EMBED) $(TESTFLAGS)" -c "2windo set nonumber" -c "1windo set nonumber"
+
+vim-benchmark-gdb: binaries libraries
+	$(TCLSH_ENV) $(PKG_ENV) vim -c "set number" -c "set mouse=a" -c "set foldlevel=100" -c "Termdebug -ex set\ print\ pretty\ on --args $(TCLSH_PROG) bench/run.tcl -load $(PACKAGE_LOAD_EMBED) $(BENCHFLAGS)" -c "2windo set nonumber" -c "1windo set nonumber"
 
 pgo:
 	rm -rf prof
