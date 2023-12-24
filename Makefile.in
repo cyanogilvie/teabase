@@ -17,7 +17,7 @@ benchmark: binaries libraries
 	$(TCLSH) `@CYGPATH@ $(srcdir)/bench/run.tcl` $(BENCHFLAGS) -load $(PACKAGE_LOAD)
 
 tags: generic/*
-	ctags-exuberant generic/*
+	ctags-exuberant -langmap=c:+.re generic/*
 
 vim-core:
 	$(TCLSH_ENV) $(PKG_ENV) vim -c 'packadd termdebug' -c "set mouse=a" -c "set number" -c "set foldlevel=100" -c "Termdebug $(TCLSH_PROG) core" -c Winbar generic/
@@ -31,7 +31,7 @@ pgo:
 	make -C . PGO="$(PGO_BUILD)" clean binaries libraries
 
 coverage:
-	make -C . PGO="--coverage" clean binaries libraries test
+	make -C . PGO="--coverage" clean binaries libraries test TESTFLAGS="$(TESTFLAGS)"
 
 test-container:
 	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" $(CONTAINER) /src/local/teabase/dtest.tcl "$(TESTFLAGS)"
