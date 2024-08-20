@@ -8,40 +8,41 @@
 #define NEW_CMD( tcl_cmd, c_cmd ) \
 	Tcl_CreateObjCommand( interp, tcl_cmd, \
 			(Tcl_ObjCmdProc *) c_cmd, \
-			(ClientData *) NULL, NULL );
+			(ClientData *) NULL, NULL )
 
 #define THROW_ERROR( ... )								\
-	{													\
+	do {												\
 		Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);	\
 		return TCL_ERROR;								\
-	}
+	} while(0)
 
 #define THROW_PRINTF( fmtstr, ... )											\
-	{																		\
+	do {																	\
 		Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
 		return TCL_ERROR;													\
-	}
+	} while(0)
 
 #define THROW_ERROR_LABEL( label, var, ... )				\
-	{														\
+	do {													\
 		Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);		\
 		var = TCL_ERROR;									\
 		goto label;											\
-	}
+	} while(0)
 
 #define THROW_PRINTF_LABEL( label, var, fmtstr, ... )						\
-	{																		\
+	do {																	\
 		Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
 		var = TCL_ERROR;													\
 		goto label;															\
-	}
+	} while(0)
 
-#define THROW_POSIX_LABEL(label, code, msg) do {							\
-	int err = Tcl_GetErrno();											\
-	const char* errstr = Tcl_ErrnoId();									\
-	Tcl_SetErrorCode(interp, "POSIX", errstr, Tcl_ErrnoMsg(err), NULL);	\
-	THROW_PRINTF_LABEL(label, code, "%s: %s %s", msg, errstr, Tcl_ErrnoMsg(err));	\
-} while(0);
+#define THROW_POSIX_LABEL(label, code, msg)									\
+	do {																	\
+		int err = Tcl_GetErrno();											\
+		const char* errstr = Tcl_ErrnoId();									\
+		Tcl_SetErrorCode(interp, "POSIX", errstr, Tcl_ErrnoMsg(err), NULL);	\
+		THROW_PRINTF_LABEL(label, code, "%s: %s %s", msg, errstr, Tcl_ErrnoMsg(err));	\
+	} while(0)
 
 // convenience macro to check the number of arguments passed to a function
 // implementing a tcl command against the number expected, and to throw
@@ -60,7 +61,7 @@
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
-	} while(0);
+	} while(0)
 #define CHECK_ARGS_LABEL3(label, rc, msg) \
 	do { \
 		if (objc != A_objc) { \
@@ -68,7 +69,7 @@
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
-	} while(0);
+	} while(0)
 #define GET_CHECK_ARGS_LABEL_MACRO(_1,_2,_3,NAME,...) NAME
 #define CHECK_ARGS_LABEL(...) GET_CHECK_ARGS_LABEL_MACRO(__VA_ARGS__, CHECK_ARGS_LABEL3, CHECK_ARGS_LABEL2)(__VA_ARGS__)
 
@@ -79,7 +80,7 @@
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
-	} while(0);
+	} while(0)
 
 #define CHECK_RANGE_ARGS_LABEL(label, rc, msg) \
 	do { \
@@ -88,12 +89,12 @@
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
-	} while(0);
+	} while(0)
 
 
 // A rather frivolous macro that just enhances readability for a common case
 #define TEST_OK( cmd )		\
-	if (cmd != TCL_OK) return TCL_ERROR;
+	if (cmd != TCL_OK) return TCL_ERROR
 
 #define TEST_OK_LABEL( label, var, cmd )		\
 	if (cmd != TCL_OK) { \
@@ -101,7 +102,7 @@
 		goto label; \
 	}
 
-#define TEST_OK_BREAK(var, cmd) if (TCL_OK != (var=(cmd))) break;
+#define TEST_OK_BREAK(var, cmd) if (TCL_OK != (var=(cmd))) break
 
 static inline void release_tclobj(Tcl_Obj** obj)
 {
@@ -112,10 +113,10 @@ static inline void release_tclobj(Tcl_Obj** obj)
 }
 #define RELEASE_MACRO(obj)		if (obj) {Tcl_DecrRefCount(obj); obj=NULL;}
 #define REPLACE_MACRO(target, replacement)	\
-{ \
+do { \
 	release_tclobj(&target); \
 	if (replacement) Tcl_IncrRefCount(target = replacement); \
-}
+} while(0)
 static inline void replace_tclobj(Tcl_Obj** target, Tcl_Obj* replacement)
 {
 	Tcl_Obj*	old = *target;
