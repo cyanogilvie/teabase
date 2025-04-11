@@ -10,37 +10,37 @@
 			(Tcl_ObjCmdProc *) c_cmd, \
 			(ClientData *) NULL, NULL )
 
-#define THROW_ERROR( ... )								\
-	do {												\
-		Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);	\
-		return TCL_ERROR;								\
+#define THROW_ERROR( ... )											\
+	do {															\
+		if (interp) Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);	\
+		return TCL_ERROR;											\
 	} while(0)
 
-#define THROW_PRINTF( fmtstr, ... )											\
-	do {																	\
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
-		return TCL_ERROR;													\
+#define THROW_PRINTF( fmtstr, ... )														\
+	do {																				\
+		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
+		return TCL_ERROR;																\
 	} while(0)
 
-#define THROW_ERROR_LABEL( label, var, ... )				\
-	do {													\
-		Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);		\
-		var = TCL_ERROR;									\
-		goto label;											\
+#define THROW_ERROR_LABEL( label, var, ... )							\
+	do {																\
+		if (interp) Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);		\
+		var = TCL_ERROR;												\
+		goto label;														\
 	} while(0)
 
-#define THROW_PRINTF_LABEL( label, var, fmtstr, ... )						\
-	do {																	\
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
-		var = TCL_ERROR;													\
-		goto label;															\
+#define THROW_PRINTF_LABEL( label, var, fmtstr, ... )									\
+	do {																				\
+		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
+		var = TCL_ERROR;																\
+		goto label;																		\
 	} while(0)
 
-#define THROW_POSIX_LABEL(label, code, msg)									\
-	do {																	\
-		int err = Tcl_GetErrno();											\
-		const char* errstr = Tcl_ErrnoId();									\
-		Tcl_SetErrorCode(interp, "POSIX", errstr, Tcl_ErrnoMsg(err), NULL);	\
+#define THROW_POSIX_LABEL(label, code, msg)												\
+	do {																				\
+		int err = Tcl_GetErrno();														\
+		const char* errstr = Tcl_ErrnoId();												\
+		if (interp) Tcl_SetErrorCode(interp, "POSIX", errstr, Tcl_ErrnoMsg(err), NULL);	\
 		THROW_PRINTF_LABEL(label, code, "%s: %s %s", msg, errstr, Tcl_ErrnoMsg(err));	\
 	} while(0)
 
@@ -50,14 +50,14 @@
 // not include the objv[0] object (the function itself)
 #define CHECK_ARGS(expected, msg)										\
 	if (objc != expected + 1) {											\
-		Tcl_WrongNumArgs(interp, 1, objv, sizeof(msg) > 1 ? msg : NULL);\
+		if (interp) Tcl_WrongNumArgs(interp, 1, objv, sizeof(msg) > 1 ? msg : NULL);\
 		return TCL_ERROR;												\
 	}
 
 #define CHECK_ARGS_LABEL2(label, rc) \
 	do { \
 		if (objc != A_objc) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, NULL); \
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
@@ -65,7 +65,7 @@
 #define CHECK_ARGS_LABEL3(label, rc, msg) \
 	do { \
 		if (objc != A_objc) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
@@ -76,7 +76,7 @@
 #define CHECK_MIN_ARGS_LABEL(label, rc, msg) \
 	do { \
 		if (objc < A_args) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
@@ -85,7 +85,7 @@
 #define CHECK_RANGE_ARGS_LABEL(label, rc, msg) \
 	do { \
 		if (objc < A_args || objc > A_objc) { \
-			Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, sizeof(msg) > 1 ? msg : NULL); \
 			rc = TCL_ERROR; \
 			goto label; \
 		} \
