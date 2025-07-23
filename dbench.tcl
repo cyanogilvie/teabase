@@ -11,7 +11,7 @@ foreach file [glob -nocomplain /src/local/*] {
 exec -ignorestderr autoconf >@ stdout
 
 # Without --enable-symbols, tcl.m4 hard codes the flags in tclConfig.sh's CFLAGS_OPTIMIZE /after/ any value we can configure
-exec -ignorestderr ./configure --enable-symbols {*}[lindex $argv 1] --with-tcl=/usr/local/lib >@ stdout
+exec -ignorestderr ./configure --enable-symbols {*}[lindex $argv 1] --with-tcl=/usr/local/lib --enable-testmode >@ stdout
 file delete -- {*}[glob -nocomplain tools/bin/*]
 switch -- [lindex $argv 2] {
 	pgo {

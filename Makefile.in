@@ -11,7 +11,7 @@ CONFIGUREFLAGS	= {CFLAGS=-O3 -flto -march=native}
 PACKAGE_LOAD = "package ifneeded $(PACKAGE_NAME) $(PACKAGE_VERSION) [list apply {dir {load [file join \$$dir $(PKG_LIB_FILE)] $(PACKAGE_NAME)}} `@CYGPATH@ $(srcdir)`]"
 PACKAGE_LOAD_EMBED = package\ ifneeded\ $(PACKAGE_NAME)\ $(PACKAGE_VERSION)\ [list\ apply\ {dir\ {load\ [file\ join\ \$$dir\ $(PKG_LIB_FILE)]\ $(PACKAGE_NAME)}}\ `@CYGPATH@ $(srcdir)`]
 
-CONTAINER = cyanogilvie/alpine-tcl:v0.9.66-gdb
+CONTAINER = cyanogilvie/alpine-tcl:v0.9.118-gdb
 
 benchmark: binaries libraries
 	$(TCLSH) `@CYGPATH@ $(srcdir)/bench/run.tcl` $(BENCHFLAGS) -load $(PACKAGE_LOAD)
@@ -37,26 +37,18 @@ coverage:
 	make -C . PGO="--coverage" clean binaries libraries test TESTFLAGS="$(TESTFLAGS)"
 
 test-container:
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" $(CONTAINER) /src/local/teabase/dtest.tcl "$(TESTFLAGS)"
+	docker run --rm -it $(DOCKER_ARGS) -v "$(realpath $(srcdir)):/src/local:ro" $(CONTAINER) /src/local/teabase/dtest.tcl "$(TESTFLAGS)"
 
 build-container:
 	mkdir -p "$(top_builddir)/dockerbuild"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" -v "$(top_builddir)/dockerbuild:/install" $(CONTAINER) /src/local/teabase/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
+	docker run --rm -it $(DOCKER_ARGS) -v "$(realpath $(srcdir)):/src/local:ro" -v "$(top_builddir)/dockerbuild:/install" $(CONTAINER) /src/local/teabase/dbuild.tcl "$(shell id -u)" "$(shell id -g)"
 
 benchmark-container:
 	mkdir -p "$(top_builddir)/rundata"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" -v "$(realpath $(srcdir))/rundata:/src/local/rundata" $(CONTAINER) /src/local/teabase/dbench.tcl "-rundata /src/local/rundata $(BENCHFLAGS)" "$(CONFIGUREFLAGS)"
+	docker run --rm -it $(DOCKER_ARGS) -v "$(realpath $(srcdir)):/src/local:ro" -v "$(realpath $(srcdir))/rundata:/src/local/rundata" $(CONTAINER) /src/local/teabase/dbench.tcl "-rundata /src/local/rundata $(BENCHFLAGS)" "$(CONFIGUREFLAGS)"
 
 benchmark-container-pgo:
 	mkdir -p "$(top_builddir)/rundata"
-	docker run --rm -it -v "$(realpath $(srcdir)):/src/local:ro" -v "$(realpath $(srcdir))/rundata:/src/local/rundata" $(CONTAINER) /src/local/teabase/dbench.tcl "-rundata /src/local/rundata $(BENCHFLAGS)" "$(CONFIGUREFLAGS)" pgo
-
-#doc: doc/reuri.n README.md
-#
-#doc/reuri.n: doc/reuri.md
-#	pandoc --standalone --from markdown --to man doc/reuri.md --output doc/reuri.n
-#
-#README.md: doc/reuri.md
-#	pandoc --standalone --wrap=none --from markdown --to gfm doc/reuri.md --output README.md
+	docker run --rm -it $(DOCKER_ARGS) -v "$(realpath $(srcdir)):/src/local:ro" -v "$(realpath $(srcdir))/rundata:/src/local/rundata" $(CONTAINER) /src/local/teabase/dbench.tcl "-rundata /src/local/rundata $(BENCHFLAGS)" "$(CONFIGUREFLAGS)" pgo
 
 .PHONY: vim-gdb vim-core pgo coverage benchmark test-container build-container benchmark-container

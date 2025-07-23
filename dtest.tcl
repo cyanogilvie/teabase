@@ -9,6 +9,6 @@ foreach file [glob -nocomplain /src/local/*] {
 	}
 }
 exec -ignorestderr autoconf >@ stdout
-exec -ignorestderr ./configure --enable-symbols --with-tcl=/usr/local/lib >@ stdout
-file delete -- {*}[glob -nocomplain tools/bin/*]
+exec -ignorestderr ./configure --enable-symbols --with-tcl=/usr/local/lib --enable-testmode >@ stdout
+file delete -force -- {*}[glob -nocomplain tools/bin/*] local
 exec -ignorestderr make clean test TESTFLAGS=[lindex $argv 0] >@ stdout
