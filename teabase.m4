@@ -156,3 +156,95 @@ AC_DEFUN([REURI_STUBS], [
 	fi
 ])
 
+#------------------------------------------------------------------------
+# HIGHEST_C_STANDARD
+#
+#   Determines the highest C standard supported by the compiler.
+#   Tests standards in descending order: C23, C17, C11, C99, C90.
+#
+# Arguments:
+#   None
+#
+# Results:
+#   Sets the following variables:
+#     C_STD_CFLAGS - Compiler flags for the highest supported standard
+#     C_STD_VERSION - The highest supported standard (e.g., "c23", "c17")
+#------------------------------------------------------------------------
+AC_DEFUN([HIGHEST_C_STANDARD], [
+    AC_MSG_CHECKING([for highest supported C standard])
+
+    # Save current CFLAGS
+    SAVE_CFLAGS_STD="$CFLAGS"
+
+    # Test standards in descending order
+    for std in c23 c17 c11 c99 c90; do
+        CFLAGS="$SAVE_CFLAGS_STD -std=$std"
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+            [C_STD_VERSION="$std"
+             C_STD_CFLAGS="-std=$std"
+             break],
+            [])
+    done
+
+    # Restore CFLAGS
+    CFLAGS="$SAVE_CFLAGS_STD"
+
+    if test -n "$C_STD_VERSION"; then
+        AC_MSG_RESULT([$C_STD_VERSION])
+    else
+        AC_MSG_RESULT([none, using compiler default])
+        C_STD_CFLAGS=""
+        C_STD_VERSION="default"
+    fi
+
+    AC_SUBST(C_STD_CFLAGS)
+    AC_SUBST(C_STD_VERSION)
+])
+
+#------------------------------------------------------------------------
+# CHECK_C23_EMBED
+#
+#   Checks if the compiler supports the C23 #embed directive.
+#   Should be called after HIGHEST_C_STANDARD if you want to use
+#   the detected standard for testing.
+#
+# Arguments:
+#   None
+#
+# Results:
+#   Defines HAVE_C23_EMBED if #embed is supported
+#------------------------------------------------------------------------
+AC_DEFUN([CHECK_C23_EMBED], [
+    AC_MSG_CHECKING([if compiler supports @%:@embed directive])
+
+    # Save current CFLAGS
+    SAVE_CFLAGS_EMBED="$CFLAGS"
+
+    # Use C_STD_CFLAGS if available, otherwise try with current flags
+    if test -n "$C_STD_CFLAGS"; then
+        CFLAGS="$SAVE_CFLAGS_EMBED $C_STD_CFLAGS"
+    fi
+
+    # Create a temporary test file to embed
+    echo "test" > conftest_embed.txt
+
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+        const char embedded_data@<:@@:>@ = {
+        @%:@embed "conftest_embed.txt"
+        , 0
+        };
+        int main(void) { return 0; }
+    ]])],
+    [AC_MSG_RESULT([yes])
+     AC_DEFINE([HAVE_C23_EMBED], [1],
+         [Define if compiler supports C23 @%:@embed directive])
+     have_c23_embed=yes],
+    [AC_MSG_RESULT([no])
+     have_c23_embed=no])
+
+    # Clean up
+    rm -f conftest_embed.txt
+
+    # Restore CFLAGS
+    CFLAGS="$SAVE_CFLAGS_EMBED"
+])
