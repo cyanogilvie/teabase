@@ -122,7 +122,7 @@ static inline void replace_tclobj(Tcl_Obj** target, Tcl_Obj* replacement)
 	Tcl_Obj*	old = *target;
 
 #if DEBUG
-	if (*target && (*target)->refCount <= 0) Tcl_Panic("replace_tclobj target exists but has refcount <= 0: %d", (*target)->refCount);
+	if (*target && (*target)->refCount <= 0) Tcl_Panic("replace_tclobj target exists but has refcount <= 0: %" TCL_SIZE_MODIFIER "d", (*target)->refCount);
 #endif
 	*target = replacement;
 	if (*target) Tcl_IncrRefCount(*target);
