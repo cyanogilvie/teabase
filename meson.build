@@ -48,24 +48,26 @@ if tclsh.found()
 
   if vim.found()
     termdebug_arg = run_command(tclsh, meson.current_source_dir() / 'tools/make_termdebug_arg.tcl',
-      meson.project_build_root(),
+      meson.current_build_dir(),
+      meson.project_source_root(),
       tclsh.full_path(),
       meson.project_name(),
       meson.project_version(),
       check: true,
     ).stdout().strip()
 
+    td_conf = configuration_data()
+    td_conf.set('TERMDEBUG_ARG', termdebug_arg)
+
+    termdebug_vim = configure_file(
+      input: 'termdebug.vim.in',
+      output: 'termdebug.vim',
+      configuration: td_conf,
+    )
+
     message('Found Vim/Neovim: ' + vim.full_path() + ' for vim-gdb target')
     run_target('vim-gdb',
-      command:  [vim,
-        '-c', 'set number',
-        '-c', 'set mouse=a',
-        '-c', 'set foldlevel=100',
-        '-c', 'packadd termdebug',
-        '-c', termdebug_arg,
-        '-c', '2windo set nonumber',
-        '-c', '1windo set nonumber',
-      ],
+      command: [vim, '-S', termdebug_vim],
     )
   endif
 endif

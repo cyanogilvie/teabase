@@ -34,7 +34,11 @@ endif
 
 tclver_full   = tcl_dep.version()
 tclver_parts  = tclver_full.split('.')
-tclver        = tclver_parts[0] + '.' + tclver_parts[1]
+tclver_major = tclver_parts[0]
+tclver_minor = tclver_parts[1]
+# Strip alpha/beta suffixes
+tclver_minor = tclver_minor.split('a')[0].split('b')[0].split('rc')[0]
+tclver = tclver_major + '.' + tclver_minor
 exe_suffix = host_machine.system() == 'windows' ? '.exe' : ''
 exec_prefix = tcl_dep.get_variable('exec_prefix')
 tclsh_search = []
