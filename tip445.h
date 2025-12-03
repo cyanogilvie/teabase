@@ -6,10 +6,27 @@
 #include <assert.h>
 #include <limits.h>
 
+#if HAVE_HEDLEY_H
+#	include <hedley.h>
+	HEDLEY_DIAGNOSTIC_PUSH
+	HEDLEY_DIAGNOSTIC_DISABLE_UNUSED_FUNCTION
+#else
+#	if defined(__GNUC__)
+		_Pragma("GCC diagnostic push")
+		_Pragma("GCC diagnostic ignored \"-Wunused-function\"")
+#	elif defined(__clang__)
+		_Pragma("clang diagnostic push")
+		_Pragma("clang diagnostic ignored \"-Wunused-function\"")
+#	endif
+#endif
+
 /* Just enough of TIP445 to build on Tcl 8.6 */
 
 #ifndef Tcl_ObjInternalRep
 typedef union Tcl_ObjInternalRep {
+	long longValue;
+	double doubleValue;
+	void* otherValuePtr;
 	struct {
 		void*	ptr1;
 		void*	ptr2;
@@ -18,6 +35,10 @@ typedef union Tcl_ObjInternalRep {
 		void*			ptr;
 		unsigned long	value;
 	} ptrAndLongRep;
+	struct {
+		void* ptr;
+		Tcl_Size size;
+	} ptrAndSizeRep;
 } Tcl_ObjInternalRep;
 #endif
 
@@ -85,6 +106,16 @@ static char* Tcl_InitStringRep(Tcl_Obj* objPtr, const char* bytes, unsigned numB
 
 	return objPtr->bytes;
 }
+#endif
+
+#if HAVE_HEDLEY_H
+	HEDLEY_DIAGNOSTIC_POP
+#else
+#	if defined(__GNUC__)
+		_Pragma("GCC diagnostic pop")
+#	elif defined(__clang__)
+		_Pragma("clang diagnostic pop")
+#	endif
 #endif
 
 #endif	// TIP445_SHIM
