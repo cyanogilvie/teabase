@@ -19,9 +19,10 @@ configure_file(input: '../pkgIndex.tcl.in', output: '@BASENAME@',
 )
 
 # Arrange for our the package path to be first in $::auto_path
-meson.add_devenv(environment({
+devenv = {
   'TCLLIBPATH': meson.current_build_dir(),
-}))
+}
+meson.add_devenv(devenv)
 
 if tclsh.found()
   test('tcltest',

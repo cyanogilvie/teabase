@@ -16,10 +16,15 @@ tcl::tm::path add $here
 package require teabase_bench
 
 proc main {} {
-	global here
+	global here env
 	try {
 		puts "[string repeat - 80]\nStarting benchmarks\n"
-		teabase_bench::run_benchmarks [file dirname [file normalize [info script]]] {*}$::argv
+		if {[llength [glob -nocomplain -type f [file join [pwd] *.bench]]]} {
+			set benchdir	[pwd]
+		} else {
+			set benchdir	[file dirname [file normalize [info script]]]
+		}
+		teabase_bench::run_benchmarks $benchdir {*}$::argv
 	} on ok {} {
 		exit 0
 	} trap {BENCH BAD_RESULT} {errmsg options} {
