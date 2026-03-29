@@ -3,7 +3,11 @@ teabase_initialized = true
 pkg_dir = get_option('libdir') / meson.project_name()+'-'+meson.project_version()
 
 tcl_dep = dependency('tcl')
-deps += tcl_dep
+# Use tcl_dep for compile args (includes) only, link against stubs library
+deps += tcl_dep.partial_dependency(compile_args: true, includes: true)
+deps += cc.find_library('tclstub', dirs: [tcl_dep.get_variable('libdir')])
+add_project_arguments('-DUSE_TCL_STUBS=1', language: 'c')
+add_project_arguments('-DUSE_TCL_STUBS=1', language: 'cpp')
 
 hedley_dep = dependency('hedley', version: '>=15', allow_fallback: true, required: false)
 if hedley_dep.found()
