@@ -284,16 +284,33 @@ proc genStubs::export {args} {
 #	specified file with new contents.  It looks for the !BEGIN! and
 #	!END! comments to determine where to place the new text.
 #
+#	If the file does not exist, it is created from scratch using the
+#	optional before and after text to supply the boilerplate that
+#	would normally surround the generated section.
+#
 # Arguments:
 #	file	The name of the file to modify.
 #	text	The new text to place in the file.
+#	before	(optional) Default text before !BEGIN! when creating a new file.
+#	after	(optional) Default text after !END! when creating a new file.
 #
 # Results:
 #	None.
 
-proc genStubs::rewriteFile {file text} {
+proc genStubs::rewriteFile {file text {before ""} {after ""}} {
     if {![file exists $file]} {
-	puts stderr "Cannot find file: $file"
+	set out [open $file w]
+	fconfigure $out -translation lf -encoding utf-8
+	if {$before ne ""} {
+	    puts $out $before
+	}
+	puts $out "/* !BEGIN!: Do not edit below this line. */"
+	puts $out $text
+	puts $out "/* !END!: Do not edit above this line. */"
+	if {$after ne ""} {
+	    puts -nonewline $out $after
+	}
+	close $out
 	return
     }
     set in [open ${file} r]
@@ -1105,7 +1122,10 @@ proc genStubs::emitHeader {name} {
 
     emitMacros $name text
 
-    rewriteFile [file join $outDir ${name}Decls.h] $text
+    set guard _[string toupper ${name}]DECLS_H
+    rewriteFile [file join $outDir ${name}Decls.h] $text \
+	"#ifndef $guard\n#define $guard\n" \
+	"#endif /* $guard */\n"
     return
 }
 
@@ -1206,7 +1226,16 @@ proc genStubs::emitInits {} {
 	emitInit $name text
     }
 
-    rewriteFile [file join $outDir ${libraryName}StubInit.c] $text
+    set capName [string toupper [string index $libraryName 0]]
+    append capName [string range $libraryName 1 end]
+    set before "#include \"${libraryName}.h\"\n"
+    set after [join [list \
+	"" "" \
+	"MODULE_SCOPE const ${capName}Stubs* const ${libraryName}ConstStubsPtr;" \
+	"const ${capName}Stubs* const ${libraryName}ConstStubsPtr = &${libraryName}Stubs;" \
+	"" \
+    ] "\n"]
+    rewriteFile [file join $outDir ${libraryName}StubInit.c] $text $before $after
 }
 
 # genStubs::init --
