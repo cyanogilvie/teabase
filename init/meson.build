@@ -1,8 +1,8 @@
 teabase_initialized = true
 
-pkg_dir = get_option('libdir') / meson.project_name()+'-'+meson.project_version()
-
 tcl_dep = dependency('tcl')
+pkg_dir = tcl_dep.get_variable('libdir') / meson.project_name()+'-'+meson.project_version()
+
 # Use tcl_dep for compile args (includes) only, link against stubs library
 deps += tcl_dep.partial_dependency(compile_args: true, includes: true)
 deps += cc.find_library('tclstub', dirs: [tcl_dep.get_variable('libdir')])
