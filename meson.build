@@ -42,6 +42,14 @@ if tclsh.found()
     },
   )
 
+  benchmark('bench', tclsh,
+    depends: pkg_so,
+    args: meson.project_source_root() / 'teabase/run_bench.tcl',
+    verbose: true,
+    workdir: meson.project_source_root() / 'bench',
+    env: devenv,
+  )
+
   vim = find_program('vim', version: '>=8.1', native: true, required: false)
   if not vim.found()
     vim = find_program('nvim', version: '>=0.4', native: true, required: false)
