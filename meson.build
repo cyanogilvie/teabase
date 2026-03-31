@@ -47,6 +47,7 @@ if tclsh.found()
     args: meson.project_source_root() / 'teabase/run_bench.tcl',
     verbose: true,
     workdir: meson.project_source_root() / 'bench',
+    timeout: 120,
     env: devenv,
   )
 

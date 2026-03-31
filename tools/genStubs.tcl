@@ -1265,7 +1265,7 @@ proc genStubs::init {} {
     }
 
     foreach name [lsort [array names interfaces]] {
-	puts "Emitting $name"
+	#puts "Emitting $name"
 	emitHeader $name
     }
 
