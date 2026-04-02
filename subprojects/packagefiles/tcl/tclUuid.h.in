@@ -1,0 +1,2 @@
+#define TCL_VERSION_UUID \
+@UUID@
