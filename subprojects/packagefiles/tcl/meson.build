@@ -15,8 +15,31 @@ override_opts = ['werror=false', 'warning_level=1']
 
 # --- Dependencies ---
 
-zlib_dep = dependency('zlib')
+zlib_dep = dependency('zlib', required: false)
 tommath_dep = dependency('libtommath', version: '>=1.3.0', allow_fallback: true)
+
+if not zlib_dep.found()
+  # Use Tcl's bundled zlib sources
+  bundled_zlib = static_library('tclzlib',
+    'compat/zlib/adler32.c',
+    'compat/zlib/compress.c',
+    'compat/zlib/crc32.c',
+    'compat/zlib/deflate.c',
+    'compat/zlib/infback.c',
+    'compat/zlib/inffast.c',
+    'compat/zlib/inflate.c',
+    'compat/zlib/inftrees.c',
+    'compat/zlib/trees.c',
+    'compat/zlib/uncompr.c',
+    'compat/zlib/zutil.c',
+    include_directories:  compat_zlib_inc,
+    override_options:     override_opts,
+  )
+  zlib_dep = declare_dependency(
+    link_with:            bundled_zlib,
+    include_directories:  compat_zlib_inc,
+  )
+endif
 
 # --- Common compile args ---
 
@@ -42,7 +65,18 @@ tcl_args = [
   '-DTCL_WITH_EXTERNAL_TOMMATH',
 ]
 
-if not is_win
+if is_win
+  if cc.get_id() != 'msvc'
+    tcl_args += '-DHAVE_NO_SEH=1'
+  endif
+  tcl_args += '-DUNICODE'
+  tcl_args += '-D_UNICODE'
+  tcl_args += '-DTCL_CFGVAL_ENCODING="utf-8"'
+  tcl_args += '-DTCL_LIBRARY="."'
+  tcl_args += '-DTCL_PACKAGE_PATH="."'
+  tcl_args += '-DSTDC_HEADERS=1'
+  tcl_args += '-DZIPFS_BUILD=1'
+elif not is_win
   if cc.has_function_attribute('visibility')
     tcl_args += '-DMODULE_SCOPE=extern __attribute__((__visibility__("hidden")))'
     tcl_args += '-DHAVE_HIDDEN=1'
@@ -284,13 +318,17 @@ if is_win
     'win/tclWinThrd.c',
     'win/tclWinTime.c',
   )
-  tclsh_sources = files('win/tclAppInit.c')
+  # tclWinPanic.c provides Tcl_ConsolePanic — linked into both the DLL
+  # and tclsh directly (the symbol isn't dllexport'd)
+  platform_sources += files('win/tclWinPanic.c')
+  tclsh_sources = files('win/tclAppInit.c', 'win/tclWinPanic.c')
   platform_deps = [
     cc.find_library('ws2_32'),
     cc.find_library('netapi32'),
     cc.find_library('user32'),
     cc.find_library('userenv'),
   ]
+  tclsh_link_args = cc.get_id() != 'msvc' ? ['-mconsole', '-municode'] : []
 else
   platform_sources = files(
     'unix/tclEpollNotfy.c',
@@ -328,13 +366,14 @@ tcllib = shared_library(
   dependencies:           [zlib_dep, tommath_dep] + platform_deps,
   override_options:       override_opts,
   name_prefix:            is_win ? '' : 'lib',
-  gnu_symbol_visibility:  'hidden',
+  gnu_symbol_visibility:  is_win ? 'default' : 'hidden',
 )
 
 # --- Stubs library ---
 
 stub_args = [
-  '-DCFG_RUNTIME_DLLFILE="' + (is_win ? 'tcl90.dll' : 'libtcl9.0.so') + '"',
+  '-DCFG_RUNTIME_BINDIR="."',
+  '-DCFG_RUNTIME_DLLFILE="' + dll_name + '"',
   '-DCFG_RUNTIME_LIBDIR="."',
   '-DMP_FIXED_CUTOFFS',
   '-DTCL_WITH_EXTERNAL_TOMMATH',
@@ -388,6 +427,7 @@ tclsh_exe = executable(tclsh_name,
   tclsh_sources,
   include_directories:  [generic_inc, platform_inc],
   c_args:               tcl_args,
+  link_args:            is_win ? tclsh_link_args : [],
   link_with:            [tcllib, tclstub],
   dependencies:         [zlib_dep, tommath_dep] + platform_deps,
   override_options:     override_opts,
@@ -408,7 +448,6 @@ tclsh = custom_target('tclsh-zipfs',
   build_by_default: true,
 )
 
-meson.override_find_program(tclsh_name, tclsh_exe)
 
 # Point TCL_LIBRARY at the source tree so tclsh can find init.tcl
 meson.add_devenv({'TCL_LIBRARY': meson.project_source_root() / 'library'})

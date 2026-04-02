@@ -61,7 +61,7 @@ if tclsh.found()
     vim = find_program('nvim', version: '>=0.4', native: true, required: false)
   endif
 
-  if vim.found() and is_variable('build_tclsh') and build_tclsh.found()
+  if vim.found() and not tcl_is_internal and is_variable('build_tclsh') and build_tclsh.found()
     termdebug_arg = run_command(build_tclsh, meson.current_source_dir() / 'tools/make_termdebug_arg.tcl',
       meson.current_build_dir(),
       meson.project_source_root(),

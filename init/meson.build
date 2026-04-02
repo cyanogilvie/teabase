@@ -76,39 +76,45 @@ endforeach
 
 tcl_is_internal = tcl_dep.type_name() == 'internal'
 
-tclsh = find_program(tclsh_search, native: false, required: false)
-if tclsh.found() and meson.can_run_host_binaries()
-  if not tcl_is_internal
+if tcl_is_internal
+  # Get the host tclsh directly from the subproject.  For tests this
+  # runs via the exe_wrapper in cross builds.  build_tclsh (used in
+  # run_command at configure time) can't be a compiled target, so it's
+  # only set in native builds where the subproject's tclsh IS a native
+  # program.
+  tcl_subproj = subproject('tcl')
+  tclsh = tcl_subproj.get_variable('tclsh_exe')
+  build_tclsh = tclsh
+else
+  tclsh = find_program(tclsh_search, native: false, required: false)
+  if tclsh.found() and meson.can_run_host_binaries()
     if run_command(tclsh, '../tools/check_ver.tcl', tclver, check: false).returncode() != 0
       error('Tcl version of found tclsh: '+tclsh.full_path()+' does not match the Tcl version of the Tcl dependency: ' + tclver)
     endif
-  endif
-  if not tcl_is_internal
     build_tclsh = tclsh
   endif
-endif
 
-if not is_variable('build_tclsh')
-  # Find a build machine tclsh for configure-time scripts.
-  # Search by path only — bare names would match subproject overrides
-  # which can't be used in run_command().
-  exe_suffix = build_machine.system() == 'windows' ? '.exe' : ''
-  exec_prefix = tcl_dep.get_variable('exec_prefix')
-  tclsh_search = []
-  foreach name : [
-    exec_prefix / 'bin/tclsh',
-    exec_prefix / 'tclsh',
-  ]
-    tclsh_search += [
-      name + tclver + exe_suffix,
-      name + exe_suffix,
+  if not is_variable('build_tclsh')
+    # Try to find a build machine tclsh for configure-time scripts
+    exe_suffix = build_machine.system() == 'windows' ? '.exe' : ''
+    exec_prefix = tcl_dep.get_variable('exec_prefix')
+    tclsh_search = []
+    foreach name : [
+      exec_prefix / 'bin/tclsh',
+      exec_prefix / 'tclsh',
+      'tclsh',
     ]
-  endforeach
+      tclsh_search += [
+        name + tclver + exe_suffix,
+        name + exe_suffix,
+      ]
+    endforeach
 
-  build_tclsh = find_program(tclsh_search, native: true, required: false)
-  if build_tclsh.found()
-    if run_command(build_tclsh, '../tools/check_ver.tcl', tclver, check: false).returncode() != 0
-      error('Tcl version of found tclsh: '+build_tclsh.full_path()+' does not match the Tcl version of the Tcl dependency: ' + tclver)
+    build_tclsh = find_program(tclsh_search, native: true, required: false)
+    if build_tclsh.found()
+      if run_command(build_tclsh, '../tools/check_ver.tcl', tclver, check: false).returncode() != 0
+        error('Tcl version of found tclsh: '+build_tclsh.full_path()+' does not match the Tcl version of the Tcl dependency: ' + tclver)
+      endif
     endif
   endif
 endif
