@@ -3,7 +3,7 @@ directory = tcl
 source_url = https://core.tcl-lang.org/tcl/tarball/core-9-0-3/tcl.tar.gz
 source_filename = tcl-core-9-0-3.tar.gz
 source_hash = 3d56fe35d1da7b229676c11131272de82cb9cae8fff3ce369e9b1cb5ce1066bd
-patch_directory = packagefiles/tcl
+patch_directory = tcl
 
 [provide]
 tcl = tcl_dep
