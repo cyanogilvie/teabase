@@ -5,7 +5,12 @@ pkg_dir = tcl_dep.get_variable('libdir') / meson.project_name()+'-'+meson.projec
 
 # Use tcl_dep for compile args (includes) only, link against stubs library
 deps += tcl_dep.partial_dependency(compile_args: true, includes: true)
-deps += cc.find_library('tclstub', dirs: [tcl_dep.get_variable('libdir')])
+if tcl_dep.type_name() == 'internal'
+  # Subproject fallback: stubs library is already part of tcl_dep
+  deps += tcl_dep.partial_dependency(links: true)
+else
+  deps += cc.find_library('tclstub', dirs: [tcl_dep.get_variable('libdir')])
+endif
 add_project_arguments('-DUSE_TCL_STUBS=1', language: 'c')
 add_project_arguments('-DUSE_TCL_STUBS=1', language: 'cpp')
 
@@ -23,17 +28,25 @@ teaconf.set('PACKAGE_VERSION', meson.project_version())
 conf.set_quoted('PACKAGE_NAME',    meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
 
-if is_variable('tea_want_shims') and 'tip445' in tea_want_shims
-  conf.set10('TIP445_SHIM', not cc.has_function('Tcl_FetchInternalRep', prefix: '#include <tcl.h>', dependencies: tcl_dep))
-endif
+if tcl_dep.type_name() != 'internal'
+  # Compile checks require an external dependency
+  if is_variable('tea_want_shims') and 'tip445' in tea_want_shims
+    conf.set10('TIP445_SHIM', not cc.has_function('Tcl_FetchInternalRep', prefix: '#include <tcl.h>', dependencies: tcl_dep))
+  endif
 
-if not cc.compiles('#include <tcl.h>\nTcl_Size foo=0;', dependencies: tcl_dep)
-  conf.set('Tcl_Size',  'int')
-endif
+  if not cc.compiles('#include <tcl.h>\nTcl_Size foo=0;', dependencies: tcl_dep)
+    conf.set('Tcl_Size',  'int')
+  endif
 
-if not cc.has_define('MODULE_SCOPE', prefix: '#include <tcl.h>', dependencies: tcl_dep)
-  add_project_arguments('-DMODULE_SCOPE=extern',      language: 'c')
-  add_project_arguments('-DMODULE_SCOPE=extern "C"',  language: 'cpp')
+  if not cc.has_define('MODULE_SCOPE', prefix: '#include <tcl.h>', dependencies: tcl_dep)
+    add_project_arguments('-DMODULE_SCOPE=extern',      language: 'c')
+    add_project_arguments('-DMODULE_SCOPE=extern "C"',  language: 'cpp')
+  endif
+else
+  # Internal subproject provides Tcl 9 source — all features present
+  if is_variable('tea_want_shims') and 'tip445' in tea_want_shims
+    conf.set10('TIP445_SHIM', false)
+  endif
 endif
 
 tclver_full   = tcl_dep.version()
