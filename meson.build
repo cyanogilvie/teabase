@@ -12,11 +12,19 @@ pkg_so = shared_module(meson.project_name(),
 
 teaconf.set('PKG_LIB_FILE', fs.name(pkg_so.full_path()))
 
-configure_file(input: '../pkgIndex.tcl.in', output: '@BASENAME@',
-  configuration:  teaconf,
-  install_dir:    pkg_dir,
-  install_tag:    'runtime',
-)
+if not is_variable('teaconf_files')
+  teaconf_files = []
+endif
+teaconf_files += files('../pkgIndex.tcl.in')
+foreach f : teaconf_files
+  fname = fs.name(f)
+  configure_file(input: f,
+    output: fname.endswith('.in') ? '@BASENAME@' : fname,
+    configuration:  teaconf,
+    install_dir:    pkg_dir,
+    install_tag:    'runtime',
+  )
+endforeach
 
 # Arrange for our the package path to be first in $::auto_path
 devenv = {
