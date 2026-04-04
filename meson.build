@@ -98,4 +98,3 @@ if tclsh.found()
 endif
 
 configure_file(output: 'config.h', configuration: conf)
-inc += include_directories('.')
