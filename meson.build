@@ -2,6 +2,8 @@ if not is_variable('teabase_initialized')
   subdir('init')
 endif
 
+inc += include_directories('.')
+
 pkg_so = shared_module(meson.project_name(),
   pkg_sources,
   install:      true,
