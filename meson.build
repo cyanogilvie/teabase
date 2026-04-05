@@ -4,7 +4,13 @@ endif
 
 inc += include_directories('.')
 
-pkg_so = shared_module(meson.project_name(),
+if tclver_major.to_int() >= 9
+  _pkg_so_name = 'tcl9' + meson.project_name()
+else
+  _pkg_so_name = meson.project_name()
+endif
+
+pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
   install:      true,
   install_dir:  pkg_dir,
@@ -12,7 +18,20 @@ pkg_so = shared_module(meson.project_name(),
   include_directories: inc,
 )
 
-teaconf.set('PKG_LIB_FILE', fs.name(pkg_so.full_path()))
+_pkg_lib_file = fs.name(pkg_so.full_path())
+_pname = meson.project_name()
+teaconf.set('PKG_LIB_FILE', _pkg_lib_file)
+
+# TEA convention: Tcl 8 libs are "lib<name>.so", Tcl 9 are "libtcl9<name>.so".
+# Both names are always provided so that two builds (one per Tcl major version)
+# can be installed side by side in the same package directory.
+if tclver_major.to_int() >= 9
+  _base = _pkg_lib_file.replace('tcl9' + _pname, _pname)
+else
+  _base = _pkg_lib_file
+endif
+teaconf.set('PKG_LIB_FILE8', _base)
+teaconf.set('PKG_LIB_FILE9', _base.replace(_pname, 'tcl9' + _pname))
 
 if not is_variable('teaconf_files')
   teaconf_files = []
