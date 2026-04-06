@@ -224,25 +224,48 @@ if not get_option('debug')
   )
 endif
 
-# Build both static and shared libraries by default
-# Users can override with -Ddefault_library=static or -Ddefault_library=shared
-libtommath = library(
+# When tcl_alloc is enabled, define MP_MALLOC etc. so libtommath declares them
+# as extern functions rather than using stdlib malloc/free.  The consuming Tcl
+# extension must provide the implementations (tommath_malloc, tommath_realloc,
+# tommath_calloc, tommath_free) that forward to Tcl's ckalloc/ckrealloc/ckfree.
+# This is necessary because Tcl frees mp_int digit arrays from bignum Tcl_Objs
+# with ckfree, so they must have been allocated with ckalloc.
+tcl_compat_args = []
+if get_option('tcl_alloc')
+  tcl_compat_args += [
+    '-DMP_MALLOC=tommath_malloc',
+    '-DMP_REALLOC=tommath_realloc',
+    '-DMP_CALLOC=tommath_calloc',
+    '-DMP_FREE=tommath_free',
+  ]
+endif
+
+# Match the mp_digit width of the target Tcl.  Tcl 8.6 forces 32-bit digits
+# (unsigned int) while standalone libtommath 1.3.0 defaults to 64-bit on
+# 64-bit platforms.  mp_int structs cross the boundary via Tcl_NewBignumObj,
+# so the digit width must agree.
+_mp_digit_size = get_option('mp_digit_size')
+if _mp_digit_size == 4
+  tcl_compat_args += '-DMP_32BIT'
+elif _mp_digit_size == 2
+  tcl_compat_args += '-DMP_16BIT'
+elif _mp_digit_size == 1
+  tcl_compat_args += '-DMP_8BIT'
+endif
+# 8 (or 0) → use libtommath's default 64-bit digits on 64-bit platforms
+
+libtommath = static_library(
   'tommath',
   sources,
   install: false,
   include_directories: inc,
-  version: meson.project_version(),
-  link_args: cc.get_id() in ['msvc', 'clang-cl'] ? [
-    # MSVC by default exports no symbols, leading to no .LIB file being generated
-    '/DEF:@0@'.format(meson.current_source_dir() / 'libtommath.def'),
-  ] : [],
-  c_args: cc.get_id() in ['msvc', 'clang-cl'] ? [
+  c_args: tcl_compat_args + (cc.get_id() in ['msvc', 'clang-cl'] ? [
     # MSVC defaults to IEEE754 since VS 2010, but doesn't set the macro.
     # Can't use add_project_arguments here because that enables tests that contain
     # literal division by zero, which breaks compilation.
     '/fp:precise',
     '-D__STDC_IEC_559__',
-  ] : [],
+  ] : []),
 )
 
 # Install headers

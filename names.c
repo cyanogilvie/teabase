@@ -1,4 +1,3 @@
-#if DEBUG
 #define _POSIX_C_SOURCE	200809L
 #define _XOPEN_SOURCE	700
 
@@ -312,7 +311,7 @@ static const char* nouns[] = {
 };
 
 
-TCL_DECLARE_MUTEX(things_mutex);
+TCL_DECLARE_MUTEX(things_mutex)
 static int				hash_tables_initialized = 0;
 static int				maxlen_adjective = 0;
 static int				maxlen_noun = 0;
@@ -439,5 +438,4 @@ const char* name(const void *const thing)
 	return chosen;
 }
 
-#endif
 // vim: ts=4 shiftwidth=4

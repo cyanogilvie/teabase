@@ -38,6 +38,10 @@ if tcl_dep.type_name() != 'internal'
     conf.set10('TIP445_SHIM', not cc.has_function('Tcl_FetchInternalRep', prefix: '#include <tcl.h>', dependencies: tcl_dep))
   endif
 
+  if is_variable('tea_want_shims') and 'Tcl_GetBytesFromObj' in tea_want_shims
+    conf.set10('GETBYTES_SHIM', not cc.has_function('Tcl_GetBytesFromObj', prefix: '#include <tcl.h>', dependencies: tcl_dep))
+  endif
+
   if not cc.compiles('#include <tcl.h>\nTcl_Size foo=0;', dependencies: tcl_dep)
     conf.set('Tcl_Size',  'int')
   endif
@@ -46,10 +50,31 @@ if tcl_dep.type_name() != 'internal'
     add_project_arguments('-DMODULE_SCOPE=extern',      language: 'c')
     add_project_arguments('-DMODULE_SCOPE=extern "C"',  language: 'cpp')
   endif
+
+  # Detect whether Tcl was built with its bundled libtommath or an external one.
+  # When bundled (the default, and the only option on Tcl 8.x), Tcl's FreeBignum
+  # frees mp_int digit arrays via Tcl_Free, so extensions must allocate them with
+  # Tcl's allocator.  When external, Tcl uses the system libtommath which frees
+  # with free(), so extensions must match.
+  tcl_has_internal_tommath = not cc.has_define('TCL_WITH_EXTERNAL_TOMMATH',
+    prefix: '#include <tclTomMath.h>', dependencies: tcl_dep)
+
+  # Detect the mp_digit width Tcl was built with.  Tcl 8.6 uses 32-bit digits
+  # (unsigned int) while Tcl 9 and standalone libtommath 1.3.0 use 64-bit
+  # (size_t / uint64_t) on 64-bit platforms.  Our private libtommath subproject
+  # must match, since mp_int structs cross the boundary via Tcl_NewBignumObj.
+  tcl_mp_digit_size = cc.sizeof('mp_digit',
+    prefix: '#include <tcl.h>\n#include <tclTomMath.h>', dependencies: tcl_dep)
 else
   # Internal subproject provides Tcl 9 source — all features present
+  tcl_has_internal_tommath = true
+  tcl_mp_digit_size = cc.sizeof('size_t')
   if is_variable('tea_want_shims') and 'tip445' in tea_want_shims
     conf.set10('TIP445_SHIM', false)
+  endif
+
+  if is_variable('tea_want_shims') and 'Tcl_GetBytesFromObj' in tea_want_shims
+    conf.set10('GETBYTES_SHIM', false)
   endif
 endif
 

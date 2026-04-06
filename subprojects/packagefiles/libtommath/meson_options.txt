@@ -18,3 +18,17 @@ option(
     value: false,
     description: 'Build PDF documentation from LaTeX sources',
 )
+
+option(
+    'tcl_alloc',
+    type: 'boolean',
+    value: false,
+    description: 'Use Tcl allocator (ckalloc/ckrealloc/ckfree) via external tommath_malloc/etc. shims. The consuming project must provide the shim function implementations.',
+)
+
+option(
+    'mp_digit_size',
+    type: 'integer',
+    value: 0,
+    description: 'Target mp_digit size in bytes.  When non-zero, forces the digit width to match (e.g. 4 for Tcl 8.6, 8 for Tcl 9 on 64-bit).  0 means use libtommath defaults.',
+)
