@@ -54,10 +54,24 @@ if tcl_dep.type_name() != 'internal'
   # Detect libtommath configuration when requested by the consuming project.
   # Set tea_want_tommath = true before subdir('teabase/init') to enable.
   if is_variable('tea_want_tommath') and tea_want_tommath
-    tcl_has_internal_tommath = not cc.has_define('TCL_WITH_EXTERNAL_TOMMATH',
-      prefix: '#include <tclTomMath.h>', dependencies: tcl_dep)
-    tcl_mp_digit_size = cc.sizeof('mp_digit',
-      prefix: '#include <tcl.h>\n#include <tclTomMath.h>', dependencies: tcl_dep)
+    # tclTomMath.h may #include "tommath.h" which may not be installed
+    # even when Tcl has internal tommath.  Probe first to avoid a hard
+    # error from has_define / sizeof.
+    _tommath_hdr_ok = cc.compiles(
+      '#include <tcl.h>\n#include <tclTomMath.h>\nmp_digit d;',
+      name: 'tclTomMath.h usable',
+      dependencies: tcl_dep,
+    )
+    if _tommath_hdr_ok
+      tcl_has_internal_tommath = not cc.has_define('TCL_WITH_EXTERNAL_TOMMATH',
+        prefix: '#include <tclTomMath.h>', dependencies: tcl_dep)
+      tcl_mp_digit_size = cc.sizeof('mp_digit',
+        prefix: '#include <tcl.h>\n#include <tclTomMath.h>', dependencies: tcl_dep)
+    else
+      # Header broken or missing tommath.h — assume internal tommath
+      tcl_has_internal_tommath = true
+      tcl_mp_digit_size = cc.sizeof('size_t')
+    endif
   endif
 else
   # Internal subproject provides Tcl 9 source — all features present
