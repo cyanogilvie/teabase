@@ -330,6 +330,12 @@ def main():
                     help='Target host triple (default: detect)')
     ap.add_argument('--force', action='store_true',
                     help='Rebuild even if the stamp is up-to-date')
+    ap.add_argument('--copy-artifact', action='append', default=[],
+                    metavar='SRC:DEST',
+                    help='After a successful build, copy <prefix>/<SRC> to '
+                         '<DEST>.  Used to flatten cmake\'s lib/ install layout '
+                         'into a meson custom_target output namespace.  May be '
+                         'repeated.')
     args = ap.parse_args()
 
     try:
@@ -361,15 +367,45 @@ def main():
                   file=sys.stderr)
             return 1
 
+    # Validate --copy-artifact specs up front so a bad arg fails fast.
+    copy_specs = []
+    for spec in args.copy_artifact:
+        if ':' not in spec:
+            print(f'ERROR: --copy-artifact must be SRC:DEST, got {spec!r}',
+                  file=sys.stderr)
+            return 1
+        src_rel, dest = spec.split(':', 1)
+        copy_specs.append((src_rel, Path(dest)))
+
+    def do_copy_artifacts(prefix):
+        for src_rel, dest_path in copy_specs:
+            src = prefix / src_rel
+            if not src.is_file():
+                print(f'ERROR: --copy-artifact source {src} not found',
+                      file=sys.stderr)
+                return False
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest_path)
+            print(f'[interned_deps] copied {src} -> {dest_path}', flush=True)
+        return True
+
     prefix = args.prefix.resolve()
     stamp_hash = compute_stamp_hash(args.manifest, deps, host)
+
+    # Stamp is valid only if hash matches AND prefix exists AND every
+    # --copy-artifact destination still exists.  This handles the case
+    # where the meson custom_target outputs were wiped (deps-clean) but
+    # the install prefix was somehow left intact.
+    def all_copy_dests_present():
+        return all(dest.is_file() for _, dest in copy_specs)
 
     prior = read_stamp(args.stamp)
     if (not args.force
             and prior
             and prior.get('hash') == stamp_hash
             and prior.get('prefix') == str(prefix)
-            and prefix.exists()):
+            and prefix.exists()
+            and all_copy_dests_present()):
         print(f'[interned_deps] stamp up-to-date for {host}, skipping',
               flush=True)
         return 0
@@ -415,6 +451,9 @@ def main():
                 print(f'ERROR: {name}: post_install {hook["type"]} failed: {e}',
                       file=sys.stderr)
                 return 1
+
+    if not do_copy_artifacts(prefix):
+        return 1
 
     write_stamp(args.stamp, stamp_hash, prefix)
     print(f'[interned_deps] build complete, stamp written to {args.stamp}',
