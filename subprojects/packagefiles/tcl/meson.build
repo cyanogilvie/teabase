@@ -457,6 +457,13 @@ meson.add_devenv({'TCL_LIBRARY': meson.project_source_root() / 'library'})
 tcl_dep = declare_dependency(
   include_directories: generic_inc,
   link_with:           tclstub,
+  # tclTomMath.h does `#include "tommath.h"` unless TCL_NO_TOMMATH_H is
+  # defined, so any consumer that pulls in <tclTomMath.h> (e.g. for the
+  # TclBN stubs in Tcl 9) needs libtommath's headers on the compile line.
+  # Tcl itself is built with -DTCL_WITH_EXTERNAL_TOMMATH and links against
+  # tommath_dep; we propagate the compile-only parts of that dep through
+  # tcl_dep so downstream packages don't have to re-declare it themselves.
+  dependencies:        [tommath_dep.partial_dependency(compile_args: true, includes: true)],
   version:             meson.project_version(),
   variables: {
     'libdir':      meson.current_build_dir(),
