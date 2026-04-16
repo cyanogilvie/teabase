@@ -48,7 +48,7 @@ if tcl_dep.type_name() != 'internal'
     conf.set('Tcl_Size',  'int')
   endif
   if not cc.has_header_symbol('tcl.h', 'TCL_SIZE_MODIFIER', dependencies: tcl_dep)
-    conf.set('TCL_SIZE_MODIFIER', '"d"')
+    conf.set('TCL_SIZE_MODIFIER', '""')
   endif
 
   if not cc.has_define('MODULE_SCOPE', prefix: '#include <tcl.h>', dependencies: tcl_dep)
