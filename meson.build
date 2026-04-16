@@ -12,7 +12,7 @@ endif
 
 pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
-  install:      true,
+  install:      not meson.is_subproject(),
   install_dir:  pkg_dir,
   dependencies: deps,
   include_directories: inc,
@@ -42,6 +42,7 @@ foreach f : teaconf_files
   configure_file(input: f,
     output: fname.endswith('.in') ? '@BASENAME@' : fname,
     configuration:  teaconf,
+    install:        not meson.is_subproject(),
     install_dir:    pkg_dir,
     install_tag:    'runtime',
   )
