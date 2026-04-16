@@ -1,5 +1,7 @@
 teabase_initialized = true
 
+add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
+
 tcl_dep = dependency('tcl')
 if tcl_dep.type_name() == 'internal'
   pkg_dir = 'lib' / meson.project_name()+'-'+meson.project_version()

@@ -4,8 +4,6 @@ endif
 
 inc += include_directories('.')
 
-add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
-
 if tclver_major.to_int() >= 9
   _pkg_so_name = 'tcl9' + meson.project_name()
 else
