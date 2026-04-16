@@ -45,6 +45,9 @@ if tcl_dep.type_name() != 'internal'
   if not cc.compiles('#include <tcl.h>\nTcl_Size foo=0;', dependencies: tcl_dep)
     conf.set('Tcl_Size',  'int')
   endif
+  if not cc.has_header_symbol('tcl.h', 'TCL_SIZE_MODIFIER', dependencies: tcl_dep)
+    conf.set('TCL_SIZE_MODIFIER', '"d"')
+  endif
 
   if not cc.has_define('MODULE_SCOPE', prefix: '#include <tcl.h>', dependencies: tcl_dep)
     add_project_arguments('-DMODULE_SCOPE=extern',      language: 'c')
