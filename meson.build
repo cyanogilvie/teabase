@@ -48,6 +48,22 @@ foreach f : teaconf_files
   )
 endforeach
 
+# Write a sentinel file with the meson build root so that package init
+# scripts can locate build-dir artifacts.  Not installed.
+_builddir_conf = configuration_data()
+_builddir_conf.set('BUILDDIR', meson.project_build_root())
+_builddir_conf.set('SOURCEDIR', meson.global_source_root())
+configure_file(
+  output:        '__builddir',
+  configuration: _builddir_conf,
+  input:         '__builddir.in',
+)
+configure_file(
+  output:        '__srcdir',
+  configuration: _builddir_conf,
+  input:         '__srcdir.in',
+)
+
 # Arrange for our the package path to be first in $::auto_path
 devenv = {
   'TCLLIBPATH': meson.current_build_dir(),
