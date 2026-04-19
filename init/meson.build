@@ -1,5 +1,17 @@
 teabase_initialized = true
 
+if not is_variable('tea_want_shims')
+  tea_want_shims = []
+endif
+
+if not is_variable('tea_test_deps')
+  tea_test_deps = []
+endif
+
+if not is_variable('tea_bench_deps')
+  tea_bench_deps = []
+endif
+
 tcl_dep = dependency('tcl')
 if tcl_dep.type_name() == 'internal'
   pkg_dir = 'lib' / meson.project_name()+'-'+meson.project_version()
@@ -18,11 +30,13 @@ endif
 add_project_arguments('-DUSE_TCL_STUBS=1', language: 'c')
 add_project_arguments('-DUSE_TCL_STUBS=1', language: 'cpp')
 
-hedley_dep = dependency('hedley', version: '>=15', allow_fallback: true, required: false)
-if hedley_dep.found()
-  deps += hedley_dep
-  add_project_arguments('-DHAVE_HEDLEY_H', language: 'c')
-  add_project_arguments('-DHAVE_HEDLEY_H', language: 'cpp')
+if 'hedley' in tea_want_shims
+  hedley_dep = dependency('hedley', version: '>=15', allow_fallback: true, required: false)
+  if hedley_dep.found()
+    deps += hedley_dep
+    add_project_arguments('-DHAVE_HEDLEY_H', language: 'c')
+    add_project_arguments('-DHAVE_HEDLEY_H', language: 'cpp')
+  endif
 endif
 
 teaconf = conf
@@ -34,11 +48,11 @@ conf.set_quoted('PACKAGE_VERSION', meson.project_version())
 
 if tcl_dep.type_name() != 'internal'
   # Compile checks require an external dependency
-  if is_variable('tea_want_shims') and 'tip445' in tea_want_shims
+  if 'tip445' in tea_want_shims
     conf.set10('TIP445_SHIM', not cc.has_function('Tcl_FetchInternalRep', prefix: '#include <tcl.h>', dependencies: tcl_dep))
   endif
 
-  if is_variable('tea_want_shims') and 'Tcl_GetBytesFromObj' in tea_want_shims
+  if 'Tcl_GetBytesFromObj' in tea_want_shims
     conf.set10('GETBYTES_SHIM', not cc.has_function('Tcl_GetBytesFromObj', prefix: '#include <tcl.h>', dependencies: tcl_dep))
   endif
 
@@ -65,11 +79,11 @@ else
     tcl_has_internal_tommath = true
     tcl_mp_digit_size = cc.sizeof('size_t')
   endif
-  if is_variable('tea_want_shims') and 'tip445' in tea_want_shims
+  if 'tip445' in tea_want_shims
     conf.set10('TIP445_SHIM', false)
   endif
 
-  if is_variable('tea_want_shims') and 'Tcl_GetBytesFromObj' in tea_want_shims
+  if 'Tcl_GetBytesFromObj' in tea_want_shims
     conf.set10('GETBYTES_SHIM', false)
   endif
 endif

@@ -47,10 +47,16 @@ foreach f : teaconf_files
   )
 endforeach
 
-# Arrange for our the package path to be first in $::auto_path
-devenv = {
-  'TCLLIBPATH': meson.current_build_dir(),
-}
+# Arrange for our the package path to be first in $::auto_path and to be
+# able to load any subproject packages.
+devenv = environment()
+foreach _dep : tea_bench_deps
+  devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+endforeach
+foreach _dep : tea_test_deps
+  devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+endforeach
+devenv.prepend('TCLLIBPATH', meson.current_build_dir(), separator: ' ')
 meson.add_devenv(devenv)
 
 if tclsh.found()
@@ -72,12 +78,12 @@ if tclsh.found()
       meson.project_version(),      # package_version
     ],
     verbose: true,
-    depends: [pkg_so],
+    depends: [pkg_so] + tea_test_deps,
     env: test_env,
   )
 
   benchmark('bench', tclsh,
-    depends: pkg_so,
+    depends: [pkg_so] + tea_bench_deps,
     args: meson.project_source_root() / 'teabase/run_bench.tcl',
     verbose: true,
     workdir: meson.project_source_root() / 'bench',
