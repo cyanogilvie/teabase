@@ -22,6 +22,14 @@
 		return TCL_ERROR;																\
 	} while(0)
 
+#define THROW_POSIX(msg)																\
+	do {																				\
+		int err = Tcl_GetErrno();														\
+		const char* errstr = Tcl_ErrnoId();												\
+		if (interp) Tcl_SetErrorCode(interp, "POSIX", errstr, Tcl_ErrnoMsg(err), NULL);	\
+		THROW_PRINTF("%s: %s %s", msg, errstr, Tcl_ErrnoMsg(err));						\
+	} while(0)
+
 #define THROW_ERROR_LABEL( label, var, ... )							\
 	do {																\
 		if (interp) Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);		\
@@ -48,11 +56,27 @@
 // implementing a tcl command against the number expected, and to throw
 // a tcl error if they don't match.  Note that the value of expected does
 // not include the objv[0] object (the function itself)
-#define CHECK_ARGS(expected, msg)										\
-	if (objc != expected + 1) {											\
-		if (interp) Tcl_WrongNumArgs(interp, 1, objv, sizeof(msg) > 1 ? msg : NULL);\
-		return TCL_ERROR;												\
-	}
+#define CHECK_ARGS(msg)													\
+	do {																\
+		if (objc != A_objc) {											\
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg);	\
+			return TCL_ERROR;											\
+		} \
+	} while(0)
+#define CHECK_MIN_ARGS(msg)												\
+	do {																\
+		if (objc < A_args) {											\
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg);	\
+			return TCL_ERROR;											\
+		}																\
+	} while(0)
+#define CHECK_RANGE_ARGS(msg)											\
+	do {																\
+		if (objc < A_args || objc > A_objc) {							\
+			if (interp) Tcl_WrongNumArgs(interp, A_cmd+1, objv, msg);	\
+			return TCL_ERROR;											\
+		}																\
+	} while(0)
 
 #define CHECK_ARGS_LABEL2(label, rc) \
 	do { \

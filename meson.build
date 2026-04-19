@@ -12,7 +12,7 @@ endif
 
 pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
-  install:      true,
+  install:      not meson.is_subproject(),
   install_dir:  pkg_dir,
   dependencies: deps,
   include_directories: inc,
@@ -42,6 +42,7 @@ foreach f : teaconf_files
   configure_file(input: f,
     output: fname.endswith('.in') ? '@BASENAME@' : fname,
     configuration:  teaconf,
+    install:        not meson.is_subproject(),
     install_dir:    pkg_dir,
     install_tag:    'runtime',
   )
@@ -57,6 +58,23 @@ foreach _dep : tea_test_deps
   devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
 endforeach
 devenv.prepend('TCLLIBPATH', meson.current_build_dir(), separator: ' ')
+
+# Write a sentinel file with the meson build root so that package init
+# scripts can locate build-dir or source artifacts.  Not installed.
+_builddir_conf = configuration_data()
+_builddir_conf.set('BUILDDIR', meson.project_build_root())
+_builddir_conf.set('SOURCEDIR', meson.global_source_root())
+configure_file(
+  output:        '__builddir',
+  configuration: _builddir_conf,
+  input:         '__builddir.in',
+)
+configure_file(
+  output:        '__srcdir',
+  configuration: _builddir_conf,
+  input:         '__srcdir.in',
+)
+
 meson.add_devenv(devenv)
 
 if tclsh.found()
@@ -123,3 +141,4 @@ if tclsh.found()
 endif
 
 configure_file(output: 'config.h', configuration: conf)
+
