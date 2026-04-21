@@ -107,6 +107,39 @@ else
   endif
 endif
 
+# defer.h support: set tea_want_defer = true before subdir('teabase/init') to
+# enable #include "teabase/defer.h". Detects either native _Defer (clang 22+,
+# with or without -fdefer-ts), or GCC nested-function + cleanup-attribute
+# polyfill. Errors if neither is available.
+if is_variable('tea_want_defer') and tea_want_defer
+  _defer_native = '''
+    int main(void) {
+      int x = 0;
+      _Defer { x = 1; }
+      return x;
+    }
+  '''
+  _defer_polyfill = '''
+    void cleanup(int *p) { (void)p; }
+    int main(void) {
+      __attribute__((__cleanup__(cleanup))) int x;
+      auto void f(int*);
+      inline auto void f(__attribute__((__unused__)) int *p) {}
+      return 0;
+    }
+  '''
+  if cc.compiles(_defer_native, name: 'native _Defer')
+    conf.set10('HAVE_NATIVE_DEFER', true)
+  elif cc.compiles(_defer_native, args: ['-fdefer-ts'], name: 'native _Defer (-fdefer-ts)')
+    conf.set10('HAVE_NATIVE_DEFER', true)
+    add_project_arguments('-fdefer-ts', language: 'c')
+  elif cc.compiles(_defer_polyfill, name: 'GCC defer polyfill support')
+    conf.set10('HAVE_DEFER_POLYFILL', true)
+  else
+    error('No defer support: need _Defer (clang 22+ with -fdefer-ts) or GCC 9+ nested functions')
+  endif
+endif
+
 tclver_full   = tcl_dep.version()
 tclver_parts  = tclver_full.split('.')
 tclver_major = tclver_parts[0]
