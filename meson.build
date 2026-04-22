@@ -85,15 +85,39 @@ if tclsh.found()
     test_env += {'TCL_LIBRARY': tcl_dep.get_variable('source_root') / 'library'}
   endif
 
+  # Compose the tcltest -load script: source the generated pkgIndex.tcl
+  # from the build dir and require the package under test.  Driving
+  # tclsh directly (via the thin test_preamble.tcl below — in-process
+  # `source`, not a subprocess) means `meson test --test-args` flows
+  # through to tcltest's configure, and `meson test --wrapper valgrind`
+  # instruments the tclsh running the tests without --trace-children.
+  # The -load script itself gets re-used verbatim by tcltest when it
+  # spawns per-file subprocesses under `singleProcess 0`, so keep it
+  # self-contained (no reliance on anything the preamble sets up).
+  #
+  # Path and package name are interpolated inside Tcl {...} brace
+  # quoting, which is literal except for brace matching — so we only
+  # need to backslash-escape any braces they contain.
+  _pkgidx_esc = (meson.current_build_dir() / 'pkgIndex.tcl') \
+    .replace('{', '\\{').replace('}', '\\}')
+  _pname_esc = meson.project_name() \
+    .replace('{', '\\{').replace('}', '\\}')
+  _loadscript = 'source {' + _pkgidx_esc + '}; ' \
+              + 'package require -exact {' + _pname_esc + '} ' \
+              + meson.project_version()
+
   test('tcltest',
     tclsh,
     args: [
-      meson.current_source_dir() / 'tools/runtests.tcl',
-      meson.project_source_root(),  # source_root
-      meson.current_build_dir(),    # pkg_dir
-      tclsh.full_path(),            # tclsh
-      meson.project_name(),         # package_name
-      meson.project_version(),      # package_version
+      # test_preamble.tcl splices $env(TESTFLAGS) onto $::argv before
+      # sourcing tests/all.tcl, preserving the backwards-compatible way
+      # of injecting top-level tcltest options (like -match / -file) —
+      # those have to land in argv *before* the test script's own
+      # `configure {*}$argv` runs, which is too early for the -load
+      # script hook to reach.
+      meson.current_source_dir() / 'tools/test_preamble.tcl',
+      meson.project_source_root() / 'tests' / 'all.tcl',
+      '-load', _loadscript,
     ],
     verbose: true,
     depends: [pkg_so] + tea_test_deps,
