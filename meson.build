@@ -98,13 +98,23 @@ if tclsh.found()
   # Path and package name are interpolated inside Tcl {...} brace
   # quoting, which is literal except for brace matching — so we only
   # need to backslash-escape any braces they contain.
-  _pkgidx_esc = (meson.current_build_dir() / 'pkgIndex.tcl') \
+  #
+  # The pkgIndex.tcl file expects `$dir` to be the directory that
+  # contains it (Tcl's normal package-require machinery sets this).
+  # Source it via [apply] with a dir argument so `$dir` is bound
+  # locally to the build dir; otherwise the source fails with
+  # "can't read $dir", tcltest swallows it, and the fallback
+  # `package require` in loadtdom.tcl silently loads an installed
+  # copy of the package instead of the one we just built.
+  _pkgdir_esc = meson.current_build_dir() \
     .replace('{', '\\{').replace('}', '\\}')
   _pname_esc = meson.project_name() \
     .replace('{', '\\{').replace('}', '\\}')
-  _loadscript = 'source {' + _pkgidx_esc + '}; ' \
+  _loadscript = 'apply {dir {' \
+              + 'source [file join $dir pkgIndex.tcl]; ' \
               + 'package require -exact {' + _pname_esc + '} ' \
-              + meson.project_version()
+              + meson.project_version() \
+              + '}} {' + _pkgdir_esc + '}'
 
   test('tcltest',
     tclsh,
@@ -116,7 +126,7 @@ if tclsh.found()
       # `configure {*}$argv` runs, which is too early for the -load
       # script hook to reach.
       meson.current_source_dir() / 'tools/test_preamble.tcl',
-      meson.project_source_root() / 'tests' / 'all.tcl',
+      meson.project_source_root() / 'tests/all.tcl',
       '-load', _loadscript,
     ],
     verbose: true,
