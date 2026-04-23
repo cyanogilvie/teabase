@@ -12,13 +12,13 @@
 
 #define THROW_ERROR( ... )											\
 	do {															\
-		if (interp) Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);	\
+		if (interp) Tcl_AppendResult(interp, __VA_ARGS__, NULL);	\
 		return TCL_ERROR;											\
 	} while(0)
 
 #define THROW_PRINTF( fmtstr, ... )														\
 	do {																				\
-		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
+		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), __VA_ARGS__));		\
 		return TCL_ERROR;																\
 	} while(0)
 
@@ -32,14 +32,14 @@
 
 #define THROW_ERROR_LABEL( label, var, ... )							\
 	do {																\
-		if (interp) Tcl_AppendResult(interp, ##__VA_ARGS__, NULL);		\
+		if (interp) Tcl_AppendResult(interp, __VA_ARGS__, NULL);		\
 		var = TCL_ERROR;												\
 		goto label;														\
 	} while(0)
 
 #define THROW_PRINTF_LABEL( label, var, fmtstr, ... )									\
 	do {																				\
-		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), ##__VA_ARGS__));	\
+		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), __VA_ARGS__));		\
 		var = TCL_ERROR;																\
 		goto label;																		\
 	} while(0)
@@ -161,8 +161,8 @@ static inline void replace_tclobj(Tcl_Obj** target, Tcl_Obj* replacement)
 #	 include <unistd.h>
 #	 include <time.h>
 #	 include "names.h"
-#	 define DBG(...) fprintf(stdout, ##__VA_ARGS__)
-#	 define FDBG(...) fprintf(stdout, ##__VA_ARGS__)
+#	 define DBG(...) fprintf(stdout, __VA_ARGS__)
+#	 define FDBG(...) fprintf(stdout, __VA_ARGS__)
 #	 define DEBUGGER raise(SIGTRAP)
 #	 define TIME(label, task) \
 	do { \
