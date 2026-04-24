@@ -21,6 +21,10 @@ pkg_so = shared_module(_pkg_so_name,
 _pkg_lib_file = fs.name(pkg_so.full_path())
 _pname = meson.project_name()
 teaconf.set('PKG_LIB_FILE', _pkg_lib_file)
+# Also expose as a C string macro for extensions that need to know their
+# own on-disk filename at runtime (e.g. to advertise a link-name matching
+# the in-memory copy for consumers that generate and load code dynamically).
+conf.set_quoted('PKG_LIB_FILE', _pkg_lib_file)
 
 # TEA convention: Tcl 8 libs are "lib<name>.so", Tcl 9 are "libtcl9<name>.so".
 # Both names are always provided so that two builds (one per Tcl major version)
