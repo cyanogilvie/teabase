@@ -23,6 +23,7 @@ set argv    [lassign $argv argv0]
 if {[info exists env(TESTFLAGS)]} {
     lappend argv {*}$env(TESTFLAGS)
 }
+if {"-singleproc" ni $argv} {lappend argv -singleproc 1}
 # Make [info script] / $argv0 look like the test script was invoked
 # directly, so any relative-path idioms in it keep working.
 source $argv0
