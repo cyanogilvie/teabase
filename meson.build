@@ -120,6 +120,13 @@ if tclsh.found()
               + meson.project_version() \
               + '}} {' + _pkgdir_esc + '}'
 
+  # Merge devenv (which has TCLLIBPATH for tea_test_deps subproject pkgs)
+  # into test_env so the test interpreter can also load them at runtime.
+  test_run_env = devenv
+  foreach _k, _v : test_env
+    test_run_env.set(_k, _v)
+  endforeach
+
   test('tcltest',
     tclsh,
     args: [
@@ -135,7 +142,7 @@ if tclsh.found()
     ],
     verbose: true,
     depends: [pkg_so] + tea_test_deps,
-    env: test_env,
+    env: test_run_env,
   )
 
   benchmark('bench', tclsh,
