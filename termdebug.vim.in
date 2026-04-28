@@ -2,6 +2,6 @@ set number
 set mouse=a
 set foldlevel=100
 packadd termdebug
-@TERMDEBUG_ARG@
+execute '@TERMDEBUG_ARG@ ' . $TESTFLAGS
 2windo set nonumber
 1windo set nonumber

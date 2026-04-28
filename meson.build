@@ -54,7 +54,10 @@ endforeach
 
 # Arrange for our the package path to be first in $::auto_path and to be
 # able to load any subproject packages.
-devenv = environment()
+if not is_variable('devenv')
+  devenv = environment()
+endif
+
 foreach _dep : tea_bench_deps
   devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
 endforeach
