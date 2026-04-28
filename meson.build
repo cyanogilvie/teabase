@@ -56,10 +56,24 @@ endforeach
 # able to load any subproject packages.
 devenv = environment()
 foreach _dep : tea_bench_deps
-  devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+  if _dep.has_variable('tcl_pkg_path')
+    devenv.prepend('TCLLIBPATH', _dep.get_variable('tcl_pkg_path'), separator: ' ')
+  elif _dep.has_variable('tcl_tm_path')
+    devenv.prepend('TCL_'+tclver_major+'_0_TM_PATH', _dep.get_variable('tcl_tm_path'))
+  else
+    devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+    devenv.prepend('TCL_'+tclver_major+'_0_TM_PATH', fs.parent(_dep.full_path()))
+  endif
 endforeach
 foreach _dep : tea_test_deps
-  devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+  if _dep.has_variable('tcl_pkg_path')
+    devenv.prepend('TCLLIBPATH', _dep.get_variable('tcl_pkg_path'), separator: ' ')
+  elif _dep.has_variable('tcl_tm_path')
+    devenv.prepend('TCL_'+tclver_major+'_0_TM_PATH', _dep.get_variable('tcl_tm_path'))
+  else
+    devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+    devenv.prepend('TCL_'+tclver_major+'_0_TM_PATH', fs.parent(_dep.full_path()))
+  endif
 endforeach
 devenv.prepend('TCLLIBPATH', meson.current_build_dir(), separator: ' ')
 
