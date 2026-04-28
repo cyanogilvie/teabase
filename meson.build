@@ -10,6 +10,32 @@ else
   _pkg_so_name = meson.project_name()
 endif
 
+inc += include_directories('pkg_config_h')
+if is_variable('tea_genstubs')
+  genstubs = custom_target('genstubs',
+    output: [meson.project_name() + 'StubInit.c', meson.project_name() + 'Decls.h'],
+    command: [
+      build_tclsh,
+      files('tools/genStubs.tcl'),
+      meson.current_build_dir(),
+      tea_genstubs[0]
+    ],
+    install: not meson.is_subproject(),
+    install_dir: [false, pkg_dir],
+  )
+
+  deps += declare_dependency(sources: genstubs)
+
+  # Build and install stubs library for dependent extensions
+  stubs_lib = static_library(meson.project_name() + 'stub',
+    tea_genstubs[1],
+    dependencies: deps,
+    include_directories: inc,
+    install:     not meson.is_subproject(),
+    install_dir: pkg_dir,
+  )
+endif
+
 pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
   install:      not meson.is_subproject(),
@@ -188,5 +214,4 @@ if tclsh.found()
   endif
 endif
 
-configure_file(output: 'config.h', configuration: conf)
-
+subdir('pkg_config_h')
