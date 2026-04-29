@@ -106,7 +106,7 @@ configure_file(
   input:         '__srcdir.in',
 )
 
-if tclsh.found()
+if tclsh.found() and not meson.is_subproject()
   test_env = tea_host_env
   test_env.set('ERROR_ON_FAILURES', '1')
 
