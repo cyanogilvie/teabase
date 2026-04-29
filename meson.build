@@ -39,7 +39,6 @@ endif
 
 pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
-  name_prefix:  '',   # Not really a library, but a plugin
   install:      not meson.is_subproject(),
   install_dir:  pkg_dir,
   dependencies: deps,
