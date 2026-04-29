@@ -20,7 +20,7 @@ if is_variable('tea_genstubs')
       meson.current_build_dir(),
       tea_genstubs[0]
     ],
-    install: not meson.is_subproject(),
+    install_tag: [false, meson.is_subproject() ? 'deps' : 'runtime'],
     install_dir: [false, pkg_dir],
     env: tea_build_env,
   )
@@ -32,15 +32,17 @@ if is_variable('tea_genstubs')
     tea_genstubs[1],
     dependencies: deps,
     include_directories: inc,
-    install:     not meson.is_subproject(),
-    install_dir: pkg_dir,
+    install:      true,
+    install_dir:  pkg_dir,
+    install_tag:  meson.is_subproject() ? 'deps' : 'runtime',
   )
 endif
 
 pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
-  install:      not meson.is_subproject(),
+  install:      true,
   install_dir:  pkg_dir,
+  install_tag:  meson.is_subproject() ? 'deps' : 'runtime',
   dependencies: deps,
   include_directories: inc,
 )
@@ -73,9 +75,9 @@ foreach f : teaconf_files
   configure_file(input: f,
     output: fname.endswith('.in') ? '@BASENAME@' : fname,
     configuration:  teaconf,
-    install:        not meson.is_subproject(),
+    install:        true,
     install_dir:    pkg_dir,
-    install_tag:    'runtime',
+    install_tag:    meson.is_subproject() ? 'deps' : 'runtime'
   )
 endforeach
 
