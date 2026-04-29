@@ -20,8 +20,9 @@ if is_variable('tea_genstubs')
       meson.current_build_dir(),
       tea_genstubs[0]
     ],
-    install_tag: [false, meson.is_subproject() ? 'deps' : 'runtime'],
-    install_dir: [false, pkg_dir],
+    install:      true,
+    install_tag:  [false, meson.is_subproject() ? 'deps' : 'runtime'],
+    install_dir:  [false, pkg_dir],
     env: tea_build_env,
   )
 
