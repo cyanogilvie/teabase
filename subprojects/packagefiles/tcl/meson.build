@@ -45,19 +45,23 @@ endif
 
 dll_name = is_win ? 'tcl90.dll' : 'libtcl9.0.so'
 
+
+incdir      = meson.project_source_root() / 'generic'
+builddir    = meson.current_build_dir()
+tcl_library = meson.project_source_root() / 'library'
 tcl_args = [
   '-DBUILD_tcl',
-  '-DCFG_INSTALL_BINDIR="."',
-  '-DCFG_INSTALL_DOCDIR="."',
-  '-DCFG_INSTALL_INCDIR="."',
-  '-DCFG_INSTALL_LIBDIR="."',
-  '-DCFG_INSTALL_SCRDIR="."',
-  '-DCFG_RUNTIME_BINDIR="."',
+  '-DCFG_INSTALL_BINDIR="' + builddir + '"',
+  '-DCFG_INSTALL_DOCDIR="' + builddir + '"',
+  '-DCFG_INSTALL_INCDIR="' + incdir + '"',
+  '-DCFG_INSTALL_LIBDIR="' + builddir + '"',
+  '-DCFG_INSTALL_SCRDIR="' + tcl_library + '"',
+  '-DCFG_RUNTIME_BINDIR="' + builddir + '"',
   '-DCFG_RUNTIME_DLLFILE="' + dll_name + '"',
-  '-DCFG_RUNTIME_DOCDIR="."',
-  '-DCFG_RUNTIME_INCDIR="."',
-  '-DCFG_RUNTIME_LIBDIR="."',
-  '-DCFG_RUNTIME_SCRDIR="."',
+  '-DCFG_RUNTIME_DOCDIR="' + builddir + '"',
+  '-DCFG_RUNTIME_INCDIR="' + incdir + '"',
+  '-DCFG_RUNTIME_LIBDIR="' + builddir + '"',
+  '-DCFG_RUNTIME_SCRDIR="' + tcl_library + '"',
   '-DMP_FIXED_CUTOFFS',
   '-DMP_PREC=4',
   '-DPACKAGE_NAME="tcl"',
@@ -72,8 +76,6 @@ if is_win
   tcl_args += '-DUNICODE'
   tcl_args += '-D_UNICODE'
   tcl_args += '-DTCL_CFGVAL_ENCODING="utf-8"'
-  tcl_args += '-DTCL_LIBRARY="."'
-  tcl_args += '-DTCL_PACKAGE_PATH="."'
   tcl_args += '-DSTDC_HEADERS=1'
   tcl_args += '-DZIPFS_BUILD=1'
 elif not is_win
@@ -177,8 +179,8 @@ elif not is_win
   tcl_args += '-DNO_UNION_WAIT=1'
   tcl_args += '-DSTDC_HEADERS=1'
   tcl_args += '-DTCL_CFGVAL_ENCODING="utf-8"'
-  tcl_args += '-DTCL_LIBRARY="."'
-  tcl_args += '-DTCL_PACKAGE_PATH="."'
+  tcl_args += '-DTCL_LIBRARY="' + tcl_library + '"'
+  tcl_args += '-DTCL_PACKAGE_PATH="' + tcl_library + '"'
   tcl_args += '-DTCL_SHLIB_EXT=".so"'
   tcl_args += '-DTCL_UNLOAD_DLLS=1'
   tcl_args += '-DZIPFS_BUILD=1'
@@ -372,9 +374,9 @@ tcllib = shared_library(
 # --- Stubs library ---
 
 stub_args = [
-  '-DCFG_RUNTIME_BINDIR="."',
+  '-DCFG_RUNTIME_BINDIR="' + builddir + '"',
   '-DCFG_RUNTIME_DLLFILE="' + dll_name + '"',
-  '-DCFG_RUNTIME_LIBDIR="."',
+  '-DCFG_RUNTIME_LIBDIR="' + builddir + '"',
   '-DMP_FIXED_CUTOFFS',
   '-DTCL_WITH_EXTERNAL_TOMMATH',
 ]
@@ -392,6 +394,8 @@ tclstub = static_library('tclstub',
   dependencies:         tommath_dep.partial_dependency(compile_args: true, includes: true),
   c_args:               stub_args,
   override_options:     override_opts,
+  install:              true,     # Needed to prevent meson creating a thin archive
+  install_tag:          'dontuse',
 )
 
 # --- ZipFS: embed library scripts ---
