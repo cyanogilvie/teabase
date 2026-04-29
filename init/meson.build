@@ -12,6 +12,14 @@ if not is_variable('tea_bench_deps')
   tea_bench_deps = []
 endif
 
+if not is_variable('tea_host_env')
+  tea_host_env = environment()
+endif
+
+if not is_variable('tea_build_env')
+  tea_build_env = environment()
+endif
+
 add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
 
 tcl_dep = dependency('tcl')
@@ -171,11 +179,15 @@ if tcl_is_internal
   # program.
   tcl_subproj = subproject('tcl')
   tclsh = tcl_subproj.get_variable('tclsh_exe')
+  tea_host_env.set('TCL_LIBRARY', tcl_subproj.get_variable('tcl_library'))
+  tea_host_env.prepend('PATH', tcl_subproj.get_variable('exec_prefix'))
   build_tclsh = tclsh
+  tea_build_env.set('TCL_LIBRARY', tcl_subproj.get_variable('tcl_library'))
+  tea_build_env.prepend('PATH', tcl_subproj.get_variable('exec_prefix'))
 else
   tclsh = find_program(tclsh_search, native: false, required: false)
   if tclsh.found() and meson.can_run_host_binaries()
-    if run_command(tclsh, '../tools/check_ver.tcl', tclver, check: false).returncode() != 0
+    if run_command(tclsh, '../tools/check_ver.tcl', tclver, check: false, env: tea_host_env).returncode() != 0
       error('Tcl version of found tclsh: '+tclsh.full_path()+' does not match the Tcl version of the Tcl dependency: ' + tclver)
     endif
     build_tclsh = tclsh
@@ -199,9 +211,16 @@ else
 
     build_tclsh = find_program(tclsh_search, native: true, required: false)
     if build_tclsh.found()
-      if run_command(build_tclsh, '../tools/check_ver.tcl', tclver, check: false).returncode() != 0
+      if run_command(build_tclsh, '../tools/check_ver.tcl', tclver, check: false, env: tea_build_env).returncode() != 0
         error('Tcl version of found tclsh: '+build_tclsh.full_path()+' does not match the Tcl version of the Tcl dependency: ' + tclver)
       endif
     endif
+  endif
+
+  if tclsh.found()
+    tea_host_env.prepend('PATH', fs.parent(tclsh.full_path()))
+  endif
+  if build_tclsh.found()
+    tea_build_env.prepend('PATH', fs.parent(build_tclsh.full_path()))
   endif
 endif

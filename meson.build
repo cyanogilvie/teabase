@@ -22,6 +22,7 @@ if is_variable('tea_genstubs')
     ],
     install: not meson.is_subproject(),
     install_dir: [false, pkg_dir],
+    env: tea_build_env,
   )
 
   deps += declare_dependency(sources: genstubs)
@@ -38,6 +39,7 @@ endif
 
 pkg_so = shared_module(_pkg_so_name,
   pkg_sources,
+  name_prefix:  '',   # Not really a library, but a plugin
   install:      not meson.is_subproject(),
   install_dir:  pkg_dir,
   dependencies: deps,
@@ -80,17 +82,14 @@ endforeach
 
 # Arrange for our the package path to be first in $::auto_path and to be
 # able to load any subproject packages.
-if not is_variable('devenv')
-  devenv = environment()
-endif
 
 foreach _dep : tea_bench_deps
-  devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+  tea_host_env.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
 endforeach
 foreach _dep : tea_test_deps
-  devenv.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
+  tea_host_env.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
 endforeach
-devenv.prepend('TCLLIBPATH', meson.current_build_dir(), separator: ' ')
+tea_host_env.prepend('TCLLIBPATH', meson.current_build_dir(), separator: ' ')
 
 # Write a sentinel file with the meson build root so that package init
 # scripts can locate build-dir or source artifacts.  Not installed.
@@ -108,15 +107,9 @@ configure_file(
   input:         '__srcdir.in',
 )
 
-meson.add_devenv(devenv)
-
 if tclsh.found()
-  test_env = {
-    'ERROR_ON_FAILURES': '1',
-  }
-  if tcl_is_internal
-    test_env += {'TCL_LIBRARY': tcl_dep.get_variable('source_root') / 'library'}
-  endif
+  test_env = tea_host_env
+  test_env.set('ERROR_ON_FAILURES', '1')
 
   # Compose the tcltest -load script: source the generated pkgIndex.tcl
   # from the build dir and require the package under test.  Driving
@@ -149,13 +142,6 @@ if tclsh.found()
               + meson.project_version() \
               + '}} {' + _pkgdir_esc + '}'
 
-  # Merge devenv (which has TCLLIBPATH for tea_test_deps subproject pkgs)
-  # into test_env so the test interpreter can also load them at runtime.
-  test_run_env = devenv
-  foreach _k, _v : test_env
-    test_run_env.set(_k, _v)
-  endforeach
-
   test('tcltest',
     tclsh,
     args: [
@@ -171,7 +157,7 @@ if tclsh.found()
     ],
     verbose: true,
     depends: [pkg_so] + tea_test_deps,
-    env: test_run_env,
+    env: test_env,
   )
 
   benchmark('bench', tclsh,
@@ -180,7 +166,7 @@ if tclsh.found()
     verbose: true,
     workdir: meson.project_source_root() / 'bench',
     timeout: 120,
-    env: devenv,
+    env: test_env,
   )
 
   vim = find_program('vim', version: '>=8.1', native: true, required: false)
@@ -196,6 +182,7 @@ if tclsh.found()
       meson.project_name(),
       meson.project_version(),
       check: true,
+      env: tea_build_env,
     ).stdout().strip()
 
     td_conf = configuration_data()
@@ -215,3 +202,5 @@ if tclsh.found()
 endif
 
 subdir('pkg_config_h')
+
+meson.add_devenv(tea_host_env)

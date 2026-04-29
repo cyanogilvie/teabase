@@ -423,7 +423,7 @@ tcl_zip = custom_target('tcl-zipfs',
 
 tclsh_name = 'tclsh' + meson.project_version().split('.')[0] + '.' + meson.project_version().split('.')[1]
 
-tclsh_exe = executable(tclsh_name,
+tclsh_exe = executable(tclsh_name + '-base',
   tclsh_sources,
   include_directories:  [generic_inc, platform_inc],
   c_args:               tcl_args,
@@ -435,7 +435,7 @@ tclsh_exe = executable(tclsh_name,
 
 # Append the zipfs archive to tclsh so it can find its init scripts
 tclsh = custom_target('tclsh-zipfs',
-  output:   tclsh_name + '-zipfs' + exe_suffix,
+  output:   tclsh_name + exe_suffix,
   input:    [tclsh_exe, tcl_zip],
   command:  [
     'sh', '-c',
@@ -448,9 +448,19 @@ tclsh = custom_target('tclsh-zipfs',
   build_by_default: true,
 )
 
+if host_machine.system() != 'windows'
+  custom_target(
+    output:   'tclsh' + exe_suffix,
+    command:  [find_program('ln', native: true), '-s', tclsh_name + exe_suffix, '@OUTPUT@'],
+    build_by_default: true,
+  )
+endif
+
+tcl_library = meson.project_source_root() / 'library'
+exec_prefix = meson.current_build_dir()
 
 # Point TCL_LIBRARY at the source tree so tclsh can find init.tcl
-meson.add_devenv({'TCL_LIBRARY': meson.project_source_root() / 'library'})
+meson.add_devenv({'TCL_LIBRARY': tcl_library})
 
 # --- Dependency for consuming projects ---
 
@@ -467,7 +477,8 @@ tcl_dep = declare_dependency(
   version:             meson.project_version(),
   variables: {
     'libdir':      meson.current_build_dir(),
-    'exec_prefix': meson.current_build_dir(),
+    'exec_prefix': exec_prefix,
     'source_root': meson.project_source_root(),
+    'tcl_library': tcl_library,
   },
 )
