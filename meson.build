@@ -205,23 +205,31 @@ if tclsh.found() and not meson.is_subproject()
               + meson.project_version() \
               + '}} {' + _pkgdir_esc + '}'
 
-  test('tcltest',
-    tclsh,
-    args: [
-      # test_preamble.tcl splices $env(TESTFLAGS) onto $::argv before
-      # sourcing tests/all.tcl, preserving the backwards-compatible way
-      # of injecting top-level tcltest options (like -match / -file) —
-      # those have to land in argv *before* the test script's own
-      # `configure {*}$argv` runs, which is too early for the -load
-      # script hook to reach.
-      meson.current_source_dir() / 'tools/test_preamble.tcl',
-      meson.project_source_root() / 'tests/all.tcl',
-      '-load', _loadscript,
-    ],
-    verbose: true,
-    depends: [pkg_so] + tea_extra_depends,
-    env: test_env,
-  )
+  _test_deps_met = true
+  foreach _dep : tea_test_deps
+    if not _dep.found()
+      _test_deps_met = false
+    endif
+  endforeach
+  if _test_deps_met
+    test('tcltest',
+      tclsh,
+      args: [
+        # test_preamble.tcl splices $env(TESTFLAGS) onto $::argv before
+        # sourcing tests/all.tcl, preserving the backwards-compatible way
+        # of injecting top-level tcltest options (like -match / -file) —
+        # those have to land in argv *before* the test script's own
+        # `configure {*}$argv` runs, which is too early for the -load
+        # script hook to reach.
+        meson.current_source_dir() / 'tools/test_preamble.tcl',
+        meson.project_source_root() / 'tests/all.tcl',
+        '-load', _loadscript,
+      ],
+      verbose: true,
+      depends: [pkg_so] + tea_extra_depends,
+      env: test_env,
+    )
+  endif
 
   _bench_deps_met = true
   foreach _dep : tea_bench_deps
