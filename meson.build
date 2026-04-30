@@ -85,13 +85,42 @@ endforeach
 # Arrange for our the package path to be first in $::auto_path and to be
 # able to load any subproject packages.
 
-foreach _dep : tea_bench_deps
-  tea_host_env.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
-endforeach
-foreach _dep : tea_test_deps
-  tea_host_env.prepend('TCLLIBPATH', fs.parent(_dep.full_path()), separator: ' ')
-endforeach
+# Mirror this build dir into the host env (so devenv tclsh and
+# configure-time run_command can find the just-built package), and
+# record the same op so derived test/bench envs replay it.
 tea_host_env.prepend('TCLLIBPATH', meson.current_build_dir(), separator: ' ')
+tea_host_env_ops += {'var': 'TCLLIBPATH', 'value': meson.current_build_dir()}
+
+# Translate a list of tea_*_deps dependency() objects into env-mod ops:
+#   tcl_pkg_path -> TCLLIBPATH (binary `package require` packages)
+#   tcl_tm_path  -> TCL<M>_<m>_TM_PATH (pure-Tcl .tm modules)
+# Same variable names land in pkg-config (.pc) files and in subproject
+# declare_dependency(variables: {...}), so this works uniformly for
+# system installs and fallbacks. Deps exporting neither (e.g. plain C
+# libraries like libtcc) are silently skipped.
+_tm_path_var = 'TCL' + tclver_major + '_' + tclver_minor + '_TM_PATH'
+_test_dep_ops  = []
+_bench_dep_ops = []
+foreach _dep : tea_test_deps
+  _pkg_path = _dep.get_variable('tcl_pkg_path', default_value: '')
+  if _pkg_path != ''
+    _test_dep_ops += {'var': 'TCLLIBPATH', 'value': _pkg_path}
+  endif
+  _tm_path = _dep.get_variable('tcl_tm_path', default_value: '')
+  if _tm_path != ''
+    _test_dep_ops += {'var': _tm_path_var, 'value': _tm_path}
+  endif
+endforeach
+foreach _dep : tea_bench_deps
+  _pkg_path = _dep.get_variable('tcl_pkg_path', default_value: '')
+  if _pkg_path != ''
+    _bench_dep_ops += {'var': 'TCLLIBPATH', 'value': _pkg_path}
+  endif
+  _tm_path = _dep.get_variable('tcl_tm_path', default_value: '')
+  if _tm_path != ''
+    _bench_dep_ops += {'var': _tm_path_var, 'value': _tm_path}
+  endif
+endforeach
 
 # Write a sentinel file with the meson build root so that package init
 # scripts can locate build-dir or source artifacts.  Not installed.
@@ -110,8 +139,40 @@ configure_file(
 )
 
 if tclsh.found() and not meson.is_subproject()
-  test_env = tea_host_env
+  # Build test_env and bench_env as fresh environment() objects rather
+  # than aliasing tea_host_env. meson stores the env arg to test() by
+  # reference (not as a snapshot), so any later modification — like
+  # adding bench-only deps for benchmark() — would leak back into the
+  # already-registered test(). Replaying tea_host_env_ops keeps base
+  # PATH/TCLLIBPATH/TCL_LIBRARY content intact in both, while each env
+  # gets only the dep additions appropriate for its scope.
+  test_env  = environment()
+  foreach _op : tea_host_env_ops + _test_dep_ops
+    if 'op' in _op and _op['op'] == 'set'
+      test_env.set(_op['var'], _op['value'])
+    else  # 'prepend'
+      if _op['var'] == 'TCLLIBPATH'
+        test_env.prepend(_op['var'], _op['value'], separator: ' ')
+      else
+        test_env.prepend(_op['var'], _op['value'])
+      endif
+    endif
+  endforeach
   test_env.set('ERROR_ON_FAILURES', '1')
+
+  bench_env = environment()
+  foreach _op : tea_host_env_ops + _test_dep_ops + _bench_dep_ops
+    if 'op' in _op and _op['op'] == 'set'
+      bench_env.set(_op['var'], _op['value'])
+    else  # 'prepend'
+      if _op['var'] == 'TCLLIBPATH'
+        bench_env.prepend(_op['var'], _op['value'], separator: ' ')
+      else
+        bench_env.prepend(_op['var'], _op['value'])
+      endif
+    endif
+  endforeach
+  bench_env.set('ERROR_ON_FAILURES', '1')
 
   # Compose the tcltest -load script: source the generated pkgIndex.tcl
   # from the build dir and require the package under test.  Driving
@@ -158,18 +219,26 @@ if tclsh.found() and not meson.is_subproject()
       '-load', _loadscript,
     ],
     verbose: true,
-    depends: [pkg_so] + tea_test_deps,
+    depends: [pkg_so] + tea_extra_depends,
     env: test_env,
   )
 
-  benchmark('bench', tclsh,
-    depends: [pkg_so] + tea_bench_deps,
-    args: meson.project_source_root() / 'teabase/run_bench.tcl',
-    verbose: true,
-    workdir: meson.project_source_root() / 'bench',
-    timeout: 120,
-    env: test_env,
-  )
+  _bench_deps_met = true
+  foreach _dep : tea_bench_deps
+    if not _dep.found()
+      _bench_deps_met = false
+    endif
+  endforeach
+  if _bench_deps_met
+    benchmark('bench', tclsh,
+      depends: [pkg_so] + tea_extra_depends + tea_bench_extra_depends,
+      args: meson.project_source_root() / 'teabase/run_bench.tcl',
+      verbose: true,
+      workdir: meson.project_source_root() / 'bench',
+      timeout: 120,
+      env: bench_env,
+    )
+  endif
 
   vim = find_program('vim', version: '>=8.1', native: true, required: false)
   if not vim.found()
@@ -204,5 +273,22 @@ if tclsh.found() and not meson.is_subproject()
 endif
 
 subdir('pkg_config_h')
+
+# Fold test/bench dep additions into tea_host_env now that test/bench
+# environments have been built fresh (so they aren't affected by these
+# late mutations). devenv-launched tclsh ought to see the same package
+# search paths as bench_env — important for subproject-fallback deps
+# that aren't system-installed.
+foreach _op : _test_dep_ops + _bench_dep_ops
+  if 'op' in _op and _op['op'] == 'set'
+    tea_host_env.set(_op['var'], _op['value'])
+  else
+    if _op['var'] == 'TCLLIBPATH'
+      tea_host_env.prepend(_op['var'], _op['value'], separator: ' ')
+    else
+      tea_host_env.prepend(_op['var'], _op['value'])
+    endif
+  endif
+endforeach
 
 meson.add_devenv(tea_host_env)

@@ -1,0 +1,8 @@
+[wrap-file]
+source_url = https://github.com/RubyLane/rl_json/releases/download/v0.17.1/rl_json-v0.17.1.tar.gz
+source_filename = rl_json-v0.17.1.tar.gz
+source_hash = 6f351ba66863604e9d2424a8ef0a3e147dd9fbfbea6d312803294eeeac3d9fe5
+directory = rl_json-v0.17.1
+
+[provide]
+dependency_names = rl_json

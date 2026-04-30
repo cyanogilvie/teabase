@@ -1,9 +1,24 @@
 teabase_initialized = true
 
+if not is_variable('deps')
+  deps = []
+endif
+
 if not is_variable('tea_want_shims')
   tea_want_shims = []
 endif
 
+# Tcl-package dependencies needed at test/benchmark time, expressed as
+# meson dependency() objects. teabase reads `tcl_pkg_path` (binary
+# packages — added to TCLLIBPATH) and `tcl_tm_path` (pure-Tcl .tm
+# modules — added to TCL<M>_<m>_TM_PATH) from each dep's variables;
+# same names are used in .pc files and in declare_dependency(variables:)
+# subproject fallbacks. Any dep that exports neither is ignored.
+#
+# tea_bench_deps is conceptually additive to tea_test_deps (benchmarks
+# inherit the test deps). Keeping them separate lets a project add
+# heavyweight bench-only fixtures that aren't fetched/built when only
+# `meson test` runs.
 if not is_variable('tea_test_deps')
   tea_test_deps = []
 endif
@@ -12,8 +27,35 @@ if not is_variable('tea_bench_deps')
   tea_bench_deps = []
 endif
 
+# Extra build targets (executables, custom_targets, shared_modules ...)
+# that must exist before `meson test` runs. For tools accessed via
+# tea_host_env's PATH (re2c, packcc, ...) and for subproject-fallback
+# Tcl packages whose underlying targets would otherwise not get built
+# (tea_test_deps holds dependency() objects, which can't appear in a
+# test()'s `depends:` list).
+#
+# tea_bench_extra_depends is the bench-only counterpart, also additive:
+# `meson test --benchmark` builds tea_extra_depends + tea_bench_extra_depends.
+if not is_variable('tea_extra_depends')
+  tea_extra_depends = []
+endif
+
+if not is_variable('tea_bench_extra_depends')
+  tea_bench_extra_depends = []
+endif
+
+# Live host env (used for configure-time run_command and meson.add_devenv).
+# Mutations to tea_host_env are mirrored into tea_host_env_ops so we can
+# replay the same modifications onto fresh environment objects later.
+# meson's environment() can't be cloned and stores a reference (not a
+# snapshot) when passed to test() — without an op log there's no way to
+# build distinct test_env / bench_env objects with overlapping content.
+# Each entry: {'op': 'set' | 'prepend', 'var': str, 'value': str}
 if not is_variable('tea_host_env')
-  tea_host_env = environment()
+  tea_host_env     = environment()
+endif
+if not is_variable('tea_host_env_ops')
+  tea_host_env_ops = []
 endif
 
 if not is_variable('tea_build_env')
@@ -179,11 +221,17 @@ if tcl_is_internal
   # program.
   tcl_subproj = subproject('tcl')
   tclsh = tcl_subproj.get_variable('tclsh_exe')
-  tea_host_env.set('TCL_LIBRARY', tcl_subproj.get_variable('tcl_library'))
-  tea_host_env.prepend('PATH', tcl_subproj.get_variable('exec_prefix'))
+  _tcl_lib  = tcl_subproj.get_variable('tcl_library')
+  _tcl_pre  = tcl_subproj.get_variable('exec_prefix')
+  tea_host_env.set('TCL_LIBRARY', _tcl_lib)
+  tea_host_env.prepend('PATH', _tcl_pre)
+  tea_host_env_ops += [
+    {'op': 'set', 'var': 'TCL_LIBRARY', 'value': _tcl_lib},
+    {             'var': 'PATH',        'value': _tcl_pre},
+  ]
   build_tclsh = tclsh
-  tea_build_env.set('TCL_LIBRARY', tcl_subproj.get_variable('tcl_library'))
-  tea_build_env.prepend('PATH', tcl_subproj.get_variable('exec_prefix'))
+  tea_build_env.set('TCL_LIBRARY', _tcl_lib)
+  tea_build_env.prepend('PATH', _tcl_pre)
 else
   tclsh = find_program(tclsh_search, native: false, required: false)
   if tclsh.found() and meson.can_run_host_binaries()
@@ -218,7 +266,9 @@ else
   endif
 
   if tclsh.found()
-    tea_host_env.prepend('PATH', fs.parent(tclsh.full_path()))
+    _tclsh_dir = fs.parent(tclsh.full_path())
+    tea_host_env.prepend('PATH', _tclsh_dir)
+    tea_host_env_ops += {'var': 'PATH', 'value': _tclsh_dir}
   endif
   if build_tclsh.found()
     tea_build_env.prepend('PATH', fs.parent(build_tclsh.full_path()))

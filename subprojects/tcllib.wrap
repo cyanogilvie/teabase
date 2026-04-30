@@ -1,0 +1,9 @@
+[wrap-file]
+source_url = https://github.com/tcltk/tcllib/archive/refs/tags/tcllib-2-0.tar.gz
+source_filename = tcllib-2-0.tar.gz
+source_hash = c239f54cedc2fc11eb9fd5a7bbf2df1e12965937cd7fd1110e17383ec8f5e632
+patch_directory = tcllib
+directory = tcllib-tcllib-2-0
+
+[provide]
+dependency_names = tcllib
