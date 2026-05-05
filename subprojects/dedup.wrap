@@ -1,7 +1,7 @@
 [wrap-git]
 clone-recursive = true
 url = https://github.com/cyanogilvie/dedup
-revision = v0.9.19
+revision = v0.9.22
 depth = 1
 
 [provide]
