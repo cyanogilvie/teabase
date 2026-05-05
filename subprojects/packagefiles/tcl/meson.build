@@ -490,6 +490,7 @@ if host_machine.system() != 'windows'
 endif
 
 tcl_library = meson.project_source_root() / 'library'
+exec_prefix = meson.current_build_dir()
 
 # Point TCL_LIBRARY at the source tree so tclsh can find init.tcl
 meson.add_devenv({'TCL_LIBRARY': tcl_library})
