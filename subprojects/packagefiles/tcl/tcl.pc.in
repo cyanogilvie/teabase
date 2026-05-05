@@ -1,0 +1,21 @@
+# tcl pkg-config source file (wrap fallback build).
+#
+# Layout assumes the install pattern produced by this wrap:
+# tcl9.0 → ${prefix}/lib, tcl headers → ${prefix}/include,
+# tclsh → ${prefix}/bin.  Resolved via ${pcfiledir} so the install
+# tree is relocatable.
+
+prefix=@PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+libfile=libtcl9.0.so
+
+Name: Tool Command Language
+Description: Tcl is a powerful, easy-to-learn dynamic programming language, suitable for a wide range of uses.
+URL: https://www.tcl-lang.org/
+Version: @VERSION@
+Requires.private: libtommath >= 1.2.0, zlib >= 1.2.3
+Libs: -L${libdir} -ltcl9.0 -ltclstub
+Libs.private: -ldl -lz -lpthread -lm -ltommath
+Cflags: -I${includedir} -DTCL_WITH_EXTERNAL_TOMMATH

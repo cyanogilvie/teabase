@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/RubyLane/gc_class
+revision = v1.1
+depth = 1
+
+[provide]
+dependency_names = gc_class

@@ -369,6 +369,14 @@ tcllib = shared_library(
   override_options:       override_opts,
   name_prefix:            is_win ? '' : 'lib',
   gnu_symbol_visibility:  is_win ? 'default' : 'hidden',
+  install:                true,
+  # Plain `${prefix}/lib`, not get_option('libdir') — Tcl's own
+  # autoconf install convention is to ignore Debian-style multiarch
+  # subdirs.  Downstream Tcl extensions discover libtcl9 via the
+  # tcl.pc / declare_dependency machinery, not via ld config, so it's
+  # cleaner to keep the layout flat regardless of host triple.
+  install_dir:            'lib',
+  install_tag:            meson.is_subproject() ? 'deps' : 'runtime',
 )
 
 # --- Stubs library ---
@@ -395,7 +403,8 @@ tclstub = static_library('tclstub',
   c_args:               stub_args,
   override_options:     override_opts,
   install:              true,     # Needed to prevent meson creating a thin archive
-  install_tag:          'dontuse',
+  install_dir:          'lib',
+  install_tag:          'deps',
 )
 
 # --- ZipFS: embed library scripts ---
@@ -431,7 +440,14 @@ tclsh_exe = executable(tclsh_name + '-base',
   tclsh_sources,
   include_directories:  [generic_inc, platform_inc],
   c_args:               tcl_args,
-  link_args:            is_win ? tclsh_link_args : [],
+  # `$ORIGIN/../lib` so the installed tclsh in ${prefix}/bin can find
+  # libtcl9.0.so in ${prefix}/lib without LD_LIBRARY_PATH or system
+  # ldconfig wiring.  Set via -Wl,-rpath rather than meson's
+  # install_rpath because the tclsh-zipfs custom_target copies this
+  # binary at build time and the copy is what gets installed —
+  # bypassing meson's install-time rpath patching.  Setting the rpath
+  # at link time bakes it into the binary so the copy preserves it.
+  link_args:            (is_win ? tclsh_link_args : []) + (is_win ? [] : ['-Wl,-rpath,$ORIGIN/../lib']),
   link_with:            [tcllib, tclstub],
   dependencies:         [zlib_dep, tommath_dep] + platform_deps,
   override_options:     override_opts,
@@ -439,8 +455,8 @@ tclsh_exe = executable(tclsh_name + '-base',
 
 # Append the zipfs archive to tclsh so it can find its init scripts
 tclsh = custom_target('tclsh-zipfs',
-  output:   tclsh_name + exe_suffix,
-  input:    [tclsh_exe, tcl_zip],
+  output:           tclsh_name + exe_suffix,
+  input:            [tclsh_exe, tcl_zip],
   command:  [
     'sh', '-c',
     'cp "$1" "$3" && cat "$2" >> "$3" && chmod +x "$3"',
@@ -450,24 +466,73 @@ tclsh = custom_target('tclsh-zipfs',
     '@OUTPUT@',
   ],
   build_by_default: true,
+  install:          true,
+  install_dir:      'bin',
+  install_tag:      meson.is_subproject() ? 'deps' : 'runtime',
 )
 
 if host_machine.system() != 'windows'
+  # Plain `tclsh` symlink so downstream consumers can rely on a
+  # version-agnostic name on PATH.  Symlink is created at install
+  # time (the meson.add_install_script below); the build-tree symlink
+  # produced by this custom_target is consumed by `meson devenv`.
   custom_target(
     output:   'tclsh' + exe_suffix,
-    command:  [find_program('ln', native: true), '-s', tclsh_name + exe_suffix, '@OUTPUT@'],
+    command:  [find_program('ln', native: true), '-sf', tclsh_name + exe_suffix, '@OUTPUT@'],
     build_by_default: true,
+  )
+  meson.add_install_script(find_program('sh', native: true),
+    '-c',
+    'set -e; cd "$DESTDIR$MESON_INSTALL_PREFIX/bin" && ln -sf @0@@1@ tclsh@1@'.format(
+      tclsh_name, exe_suffix),
+    install_tag: meson.is_subproject() ? 'deps' : 'runtime',
   )
 endif
 
 tcl_library = meson.project_source_root() / 'library'
-exec_prefix = meson.current_build_dir()
 
 # Point TCL_LIBRARY at the source tree so tclsh can find init.tcl
 meson.add_devenv({'TCL_LIBRARY': tcl_library})
 
-# --- Dependency for consuming projects ---
+# --- Public headers ---
+# Downstream Tcl extensions need tcl.h + the public stubs decls + the
+# tommath headers Tcl re-exposes for TclBN.  Match the canonical Tcl
+# install set (the system tcl.pc's Cflags assume these are present).
+public_headers = files(
+  'generic/tcl.h',
+  'generic/tclDecls.h',
+  'generic/tclOO.h',
+  'generic/tclOODecls.h',
+  'generic/tclPlatDecls.h',
+  'generic/tclTomMath.h',
+  'generic/tclTomMathDecls.h',
+)
+install_data(public_headers,
+  install_dir:  'include',
+  install_tag:  'deps',
+)
 
+# --- pkg-config metadata ---
+pc_conf = configuration_data()
+pc_conf.set('PREFIX',  get_option('prefix'))
+pc_conf.set('VERSION', meson.project_version())
+configure_file(
+  input:          'tcl.pc.in',
+  output:         'tcl.pc',
+  configuration:  pc_conf,
+  install:        true,
+  install_dir:    'lib' / 'pkgconfig',
+  install_tag:    'deps',
+)
+
+# --- Dependency for consuming projects ---
+#
+# `libdir` here is the *install* libdir, used by consumer install_dir
+# computations (`tcl_dep.get_variable('libdir') / 'pkgconfig'`, etc.)
+# so .pc and per-package dirs land in the right place.  The build-time
+# libtclstub for the wrap-fallback case is exposed via `link_with`
+# below — consumers that need it use `tcl_dep.partial_dependency(links:
+# true)`, not find_library against this libdir variable.
 tcl_dep = declare_dependency(
   include_directories: generic_inc,
   link_with:           tclstub,
@@ -480,8 +545,12 @@ tcl_dep = declare_dependency(
   dependencies:        [tommath_dep.partial_dependency(compile_args: true, includes: true)],
   version:             meson.project_version(),
   variables: {
-    'libdir':      meson.current_build_dir(),
-    'exec_prefix': exec_prefix,
+    # Mirror the tcl.pc variables so consumers can use a uniform
+    # tcl_dep.get_variable('NAME') call regardless of whether tcl came
+    # from pkg-config or from this wrap.
+    'prefix':      get_option('prefix'),
+    'libdir':      get_option('prefix') / 'lib',
+    'exec_prefix': get_option('prefix'),
     'source_root': meson.project_source_root(),
     'tcl_library': tcl_library,
   },

@@ -1,0 +1,9 @@
+[wrap-file]
+directory = thread
+source_url = https://core.tcl-lang.org/thread/tarball/thread-3-0-5/thread.tar.gz
+source_filename = thread-3-0-5.tar.gz
+source_hash = 8c57eeb95565732ba984da3c647bf7fe032f5ed625c83bafe5131bcc39d67c2d
+patch_directory = thread
+
+[provide]
+dependency_names = Thread

@@ -1,0 +1,2 @@
+#define THREAD_VERSION_UUID \
+@UUID@

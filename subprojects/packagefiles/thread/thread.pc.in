@@ -1,0 +1,13 @@
+# pkg-config metadata for Thread (the Tcl threads C extension).
+#
+# Layout assumes the install pattern produced by this wrap: the
+# pkgIndex + libtcl9thread<VERSION>.so live in the per-package dir
+# under the resolving Tcl's libdir (tcl_dep.get_variable('libdir')).
+# Resolved via ${pcfiledir} so the install tree is relocatable.
+
+tcl_pkg_path=${pcfiledir}/../@PKG_DIR_BASENAME@
+
+Name: @PACKAGE_NAME@
+Description: The Thread Tcl extension — POSIX thread primitives + thread-shared variables for Tcl interpreters.
+URL: https://core.tcl-lang.org/thread
+Version: @PACKAGE_VERSION@

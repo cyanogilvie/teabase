@@ -1,0 +1,8 @@
+[wrap-git]
+clone-recursive = true
+url = https://github.com/cyanogilvie/tcl-tomcrypt
+revision = v0.9.7
+depth = 1
+
+[provide]
+dependency_names = tomcrypt
