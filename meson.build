@@ -78,7 +78,7 @@ foreach f : teaconf_files
     configuration:  teaconf,
     install:        true,
     install_dir:    pkg_dir,
-    install_tag:    meson.is_subproject() ? 'deps' : 'runtime'
+    install_tag:    meson.is_subproject() ? 'deps' : 'runtime',
   )
 endforeach
 
