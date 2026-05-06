@@ -1,8 +1,8 @@
-[wrap-git]
-clone-recursive = true
-url = https://github.com/cyanogilvie/tcl-s2n
-revision = v0.8.3
-depth = 1
+[wrap-file]
+source_url = https://github.com/cyanogilvie/tcl-s2n/releases/download/v0.8.3/s2n-0.8.3.tar.gz
+source_hash = 4c025f8beb19a407905cbe27f42ce0d6b46aa646b4e9ad7cdae4cb7749d54a0e
+source_filename = s2n-0.8.3.tar.gz
+directory = s2n-0.8.3
 
 [provide]
 dependency_names = tcl-s2n

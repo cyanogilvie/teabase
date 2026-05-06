@@ -116,7 +116,7 @@ configure_file(
 # wraps: tcl_pkg_path lets downstream consumers locate the install via
 # `pkg-config --variable=tcl_pkg_path Thread`.
 pc_conf = configuration_data()
-pc_conf.set('PACKAGE_NAME',     'Thread')
+pc_conf.set('PACKAGE_NAME',     'thread')
 pc_conf.set('PACKAGE_VERSION',  meson.project_version())
 pc_conf.set('PKG_DIR_BASENAME', pkg_dir_basename)
 configure_file(
@@ -139,7 +139,7 @@ thread_dep = declare_dependency(
     'version':      meson.project_version(),
   },
 )
-meson.override_dependency('Thread', thread_dep)
+meson.override_dependency('thread', thread_dep)
 
 # Devenv so `meson devenv -C <builddir> tclsh` picks Thread up.
 devenv = environment()
