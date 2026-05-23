@@ -240,7 +240,10 @@ if tclsh.found() and not meson.is_subproject()
   if _bench_deps_met
     benchmark('bench', tclsh,
       depends: [pkg_so] + tea_extra_depends + tea_bench_extra_depends,
-      args: meson.project_source_root() / 'teabase/run_bench.tcl',
+      args: [
+        meson.project_source_root() / 'teabase/run_bench.tcl',
+        '-load', _loadscript,
+      ],
       verbose: true,
       workdir: meson.project_source_root() / 'bench',
       timeout: 120,
