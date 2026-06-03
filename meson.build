@@ -30,16 +30,21 @@ if is_variable('tea_genstubs')
 
   # Build and install stubs library for dependent extensions.
   # The stub lib is just the function-pointer table plus a one-line init
-  # function — there is nothing to step into. Building it with the project's
-  # debug flags (-g -ggdb3) would otherwise serialize the entire TclStubs
-  # type surface (~600 typed function pointers) and every visible macro into
-  # DWARF, bloating a ~1.5KB archive to hundreds of KB. Force -g0 so the
-  # installed lib stays tiny regardless of buildtype.
+  # function — there is nothing to step into and nothing to optimize across.
+  # Two flag sources would otherwise bloat a ~1.5KB archive to hundreds of KB,
+  # both by serializing the entire TclStubs type surface (~600 typed function
+  # pointers, plus every visible macro) that the included headers pull in:
+  #   -g/-ggdb3 (debug buildtypes)        -> DWARF type + macro info
+  #   -flto -ffat-lto-objects (env CFLAGS, e.g. the alpine-tcl release build)
+  #                                       -> embedded GIMPLE LTO IR (.gnu.lto_*)
+  # Force -g0 and -fno-lto so the installed lib stays tiny regardless of
+  # buildtype or inherited CFLAGS. These land after env CFLAGS on the command
+  # line (target c_args have higher precedence in meson), so they win.
   stubs_lib = static_library(meson.project_name() + 'stub',
     tea_genstubs[1],
     dependencies: deps,
     include_directories: inc,
-    c_args:       cc.get_supported_arguments('-g0'),
+    c_args:       cc.get_supported_arguments('-g0', '-fno-lto'),
     install:      true,
     install_dir:  pkg_dir,
     install_tag:  meson.is_subproject() ? 'deps' : 'runtime',
