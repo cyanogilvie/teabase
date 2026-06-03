@@ -35,9 +35,23 @@ if is_variable('tea_genstubs')
   # type surface (~600 typed function pointers) and every visible macro into
   # DWARF, bloating a ~1.5KB archive to hundreds of KB. Force -g0 so the
   # installed lib stays tiny regardless of buildtype.
+  # The stub lib needs only headers (tcl.h + generated Decls.h) plus the
+  # generated jitcStubInit.c source; it links nothing. Passing the full
+  # `deps` (which carries link_with static libs like libtcc) would fold
+  # those archives' objects into this one, bloating a ~1.5KB archive by
+  # ~900KB. Keep compile args / includes / sources but drop the links.
+  stub_deps = []
+  foreach _d : deps
+    stub_deps += _d.partial_dependency(
+      compile_args: true,
+      includes:     true,
+      sources:      true,
+    )
+  endforeach
+
   stubs_lib = static_library(meson.project_name() + 'stub',
     tea_genstubs[1],
-    dependencies: deps,
+    dependencies: stub_deps,
     include_directories: inc,
     c_args:       cc.get_supported_arguments('-g0'),
     install:      true,
