@@ -30,16 +30,26 @@ if is_variable('tea_genstubs')
 
   # Build and install stubs library for dependent extensions.
   # The stub lib is just the function-pointer table plus a one-line init
-  # function — there is nothing to step into. Building it with the project's
-  # debug flags (-g -ggdb3) would otherwise serialize the entire TclStubs
-  # type surface (~600 typed function pointers) and every visible macro into
-  # DWARF, bloating a ~1.5KB archive to hundreds of KB. Force -g0 so the
-  # installed lib stays tiny regardless of buildtype.
-  # The stub lib needs only headers (tcl.h + generated Decls.h) plus the
-  # generated jitcStubInit.c source; it links nothing. Passing the full
-  # `deps` (which carries link_with static libs like libtcc) would fold
-  # those archives' objects into this one, bloating a ~1.5KB archive by
-  # ~900KB. Keep compile args / includes / sources but drop the links.
+  # function — there is nothing to step into, nothing to optimize across, and
+  # nothing to link. Three things would otherwise bloat a ~1.5KB archive to
+  # hundreds of KB:
+  #
+  #  1. Compile flags that serialize the entire TclStubs type surface (~600
+  #     typed function pointers, plus every visible macro) that the included
+  #     headers (tcl.h + generated Decls.h) pull in:
+  #       -g/-ggdb3 (debug buildtypes)        -> DWARF type + macro info
+  #       -flto -ffat-lto-objects (env CFLAGS, e.g. the alpine-tcl release
+  #                                build)      -> embedded GIMPLE LTO IR
+  #                                               (.gnu.lto_* sections)
+  #     Force -g0 and -fno-lto so the lib stays tiny regardless of buildtype or
+  #     inherited CFLAGS. These land after env CFLAGS on the command line
+  #     (target c_args have higher precedence in meson), so they win.
+  #
+  #  2. Link dependencies folded in via `deps`. The stub lib needs only the
+  #     headers and the generated StubInit.c source; it links nothing. Passing
+  #     the full `deps` (which carries link_with static libs like libtcc) would
+  #     fold those archives' objects into this one. Take a partial_dependency
+  #     keeping compile args / includes / sources but dropping the links.
   stub_deps = []
   foreach _d : deps
     stub_deps += _d.partial_dependency(
@@ -53,7 +63,7 @@ if is_variable('tea_genstubs')
     tea_genstubs[1],
     dependencies: stub_deps,
     include_directories: inc,
-    c_args:       cc.get_supported_arguments('-g0'),
+    c_args:       cc.get_supported_arguments('-g0', '-fno-lto'),
     install:      true,
     install_dir:  pkg_dir,
     install_tag:  meson.is_subproject() ? 'deps' : 'runtime',
