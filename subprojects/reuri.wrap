@@ -1,7 +1,7 @@
 [wrap-git]
 clone-recursive = true
 url = https://github.com/cyanogilvie/reuri
-revision = v0.16.3
+revision = v0.16.4
 depth = 1
 
 [provide]
