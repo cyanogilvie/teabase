@@ -1,0 +1,8 @@
+[wrap-file]
+source_url = https://github.com/cyanogilvie/type/releases/download/v0.4/type-v0.4.tar.gz
+source_filename = type-v0.4.tar.gz
+source_hash = f95c6a4b8bc484082048fa5a1e37eb561b2f8144944b91e2299b34ff158057bf
+directory = type-v0.4
+
+[provide]
+dependency_names = type
