@@ -211,6 +211,16 @@ foreach name : [
   ]
 endforeach
 
+if tclver_major.to_int() >= 9
+  tea_pkg_so_name = 'tcl9' + meson.project_name()
+else
+  tea_pkg_so_name = meson.project_name()
+endif
+tea_pkg_stub_name = meson.project_name() + 'stub'
+
+conf.set_quoted('PACKAGE_LIBNAME', tea_pkg_so_name)
+conf.set_quoted('PACKAGE_STUBLIB', tea_pkg_stub_name)
+
 tcl_is_internal = tcl_dep.type_name() == 'internal'
 
 if tcl_is_internal
@@ -274,3 +284,4 @@ else
     tea_build_env.prepend('PATH', fs.parent(build_tclsh.full_path()))
   endif
 endif
+

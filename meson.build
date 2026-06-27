@@ -4,12 +4,6 @@ endif
 
 inc += include_directories('.')
 
-if tclver_major.to_int() >= 9
-  _pkg_so_name = 'tcl9' + meson.project_name()
-else
-  _pkg_so_name = meson.project_name()
-endif
-
 inc += include_directories('pkg_config_h')
 if is_variable('tea_genstubs')
   genstubs = custom_target('genstubs',
@@ -29,7 +23,7 @@ if is_variable('tea_genstubs')
   deps += declare_dependency(sources: genstubs)
 
   # Build and install stubs library for dependent extensions
-  stubs_lib = static_library(meson.project_name() + 'stub',
+  stubs_lib = static_library(tea_pkg_stub_name,
     tea_genstubs[1],
     dependencies: deps,
     include_directories: inc,
@@ -39,7 +33,7 @@ if is_variable('tea_genstubs')
   )
 endif
 
-pkg_so = shared_module(_pkg_so_name,
+pkg_so = shared_module(tea_pkg_so_name,
   pkg_sources,
   install:      true,
   install_dir:  pkg_dir,
