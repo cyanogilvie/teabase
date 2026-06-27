@@ -1,7 +1,7 @@
 [wrap-git]
 clone-recursive = true
 url = https://github.com/cyanogilvie/tcl-brotli
-revision = v0.4.2
+revision = v0.4.5
 depth = 1
 
 [provide]

@@ -381,7 +381,7 @@ tcllib = shared_library(
 
 # --- Stubs library ---
 
-stub_args = [
+stub_args = cc.get_supported_arguments('-g0', '-fno-lto') + [
   '-DCFG_RUNTIME_BINDIR="' + builddir + '"',
   '-DCFG_RUNTIME_DLLFILE="' + dll_name + '"',
   '-DCFG_RUNTIME_LIBDIR="' + builddir + '"',

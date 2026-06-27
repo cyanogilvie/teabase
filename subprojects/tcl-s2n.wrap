@@ -1,8 +1,8 @@
 [wrap-file]
-source_url = https://github.com/cyanogilvie/tcl-s2n/releases/download/v0.8.3/s2n-0.8.3.tar.gz
-source_hash = 4c025f8beb19a407905cbe27f42ce0d6b46aa646b4e9ad7cdae4cb7749d54a0e
-source_filename = s2n-0.8.3.tar.gz
-directory = s2n-0.8.3
+source_url = https://github.com/cyanogilvie/tcl-s2n/releases/download/v0.8.4/s2n-0.8.4.tar.gz
+source_hash = 15f442dfa2f3f65f930dc9abc5fe7589c9a68e5732f70c58962cc0cbe2d273a9
+source_filename = s2n-0.8.4.tar.gz
+directory = s2n-0.8.4
 
 [provide]
 dependency_names = tcl-s2n
