@@ -15,6 +15,20 @@ project(
 
 cpp = meson.get_compiler('cpp')
 
+# re2c is spawned once per cdef compile; for a JIT that launch cost is paid at
+# runtime. A dynamically linked C++ binary spends most of its startup in the
+# dynamic loader (relocating libstdc++/libgcc and resolving symbols). re2c is a
+# self-contained text transform (no dlopen/NSS/locale needs), so link it fully
+# statically to drop the loader entirely; fall back to a static C++ runtime
+# (libc dynamic) where a full static link isn't supported.
+re2c_link_args = cpp.get_supported_link_arguments('-static')
+if re2c_link_args.length() == 0
+  re2c_link_args = cpp.get_supported_link_arguments(
+    '-static-libstdc++',
+    '-static-libgcc',
+  )
+endif
+
 conf_data = configuration_data()
 conf_data.set_quoted('PROJECT_VERSION', meson.project_version())
 
@@ -120,6 +134,7 @@ re2c_exe = executable('re2c',
   ],
   include_directories: include_directories('.'),
   cpp_args: defines,
+  link_args:   re2c_link_args,
   install:     _pkg_install_dir != '',
   install_dir: _pkg_install_dir != '' ? _pkg_install_dir : [],
 )
