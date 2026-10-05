@@ -2,12 +2,23 @@
 #define _TIP445_H
 
 /* teabase builds set TIP445_SHIM from a configure check (config.h).  Without
- * one (a jitc cdef, say), go by the Tcl version: TIP 445 arrived in 8.7. */
+ * one (a jitc cdef, say), go by the Tcl version: TIP 445 arrived in 8.7, under
+ * pre-release names (Tcl_FetchIntRep, ...) in the 8.7 alphas. */
 #ifndef TIP445_SHIM
-#	define TIP445_SHIM (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 7)
+#	define TIP445_SHIM (TCL_MAJOR_VERSION == 8 && (TCL_MINOR_VERSION < 7 || \
+		(TCL_MINOR_VERSION == 7 && TCL_RELEASE_LEVEL == TCL_ALPHA_RELEASE)))
 #endif
 
-#if TIP445_SHIM
+#if TIP445_SHIM && TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 7
+/* The 8.7 alphas (a2 - a5) have the API under the names TIP 445 had before
+ * it was finalized: alias them rather than shim (Tcl_InitStringRep and
+ * Tcl_HasStringRep already have their final names there) */
+typedef Tcl_ObjIntRep	Tcl_ObjInternalRep;
+#	define Tcl_FetchInternalRep	Tcl_FetchIntRep
+#	define Tcl_StoreInternalRep	Tcl_StoreIntRep
+#	define Tcl_FreeInternalRep	Tcl_FreeIntRep
+
+#elif TIP445_SHIM
 #include <string.h>
 #include <assert.h>
 #include <limits.h>

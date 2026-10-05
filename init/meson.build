@@ -78,7 +78,25 @@ if tcl_dep.type_name() == 'internal'
   # Subproject fallback: stubs library is already part of tcl_dep
   deps += tcl_dep.partial_dependency(links: true)
 else
-  deps += cc.find_library('tclstub', dirs: [tcl_dep.get_variable('libdir')])
+  # Distro packages provide an unversioned libtclstub.a; a source-built Tcl
+  # installs only libtclstub<major>.<minor>.a (and Windows builds
+  # tclstub<major><minor>).  Tcl's minor versions are single digits, which
+  # also drops an alpha/beta suffix ("8.7a2").
+  _tcl_v = tcl_dep.version().split('.')
+  _tcl_mm = [_tcl_v[0], _tcl_v.length() > 1 ? _tcl_v[1].substring(0, 1) : '0']
+  _tcl_libdir = tcl_dep.get_variable('libdir')
+  _stub_dep = disabler()
+  foreach _name : ['tclstub', 'tclstub' + '.'.join(_tcl_mm), 'tclstub' + ''.join(_tcl_mm)]
+    _stub_dep = cc.find_library(_name, dirs: [_tcl_libdir], required: false)
+    if _stub_dep.found()
+      break
+    endif
+  endforeach
+  if not _stub_dep.found()
+    error('Tcl stubs library not found in @0@ (tried tclstub, tclstub@1@, tclstub@2@)'.format(
+      _tcl_libdir, '.'.join(_tcl_mm), ''.join(_tcl_mm)))
+  endif
+  deps += _stub_dep
 endif
 add_project_arguments('-DUSE_TCL_STUBS=1', language: 'c')
 add_project_arguments('-DUSE_TCL_STUBS=1', language: 'cpp')
