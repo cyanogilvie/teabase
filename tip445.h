@@ -1,6 +1,12 @@
 #ifndef _TIP445_H
 #define _TIP445_H
 
+/* teabase builds set TIP445_SHIM from a configure check (config.h).  Without
+ * one (a jitc cdef, say), go by the Tcl version: TIP 445 arrived in 8.7. */
+#ifndef TIP445_SHIM
+#	define TIP445_SHIM (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 7)
+#endif
+
 #if TIP445_SHIM
 #include <string.h>
 #include <assert.h>

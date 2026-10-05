@@ -5,6 +5,19 @@
 
 #include <tcl.h>
 
+/* Tcl 8.6 has no Tcl_Size (TIP 660): provide it as Tcl 8.7's tcl.h does.  The
+ * guards let this coexist with other polyfills (such as teabase's config.h
+ * #define Tcl_Size int), whichever comes first. */
+#if TCL_MAJOR_VERSION < 9 && !defined(TCL_SIZE_MAX)
+#	ifndef Tcl_Size
+		typedef int Tcl_Size;
+#	endif
+#	define TCL_SIZE_MAX ((int)(((unsigned int)-1)>>1))
+#	ifndef TCL_SIZE_MODIFIER
+#		define TCL_SIZE_MODIFIER ""
+#	endif
+#endif
+
 #define NEW_CMD( tcl_cmd, c_cmd ) \
 	Tcl_CreateObjCommand( interp, tcl_cmd, \
 			(Tcl_ObjCmdProc *) c_cmd, \
