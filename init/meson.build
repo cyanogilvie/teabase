@@ -72,7 +72,8 @@ else
 endif
 
 # Use tcl_dep for compile args (includes) only, link against stubs library
-deps += tcl_dep.partial_dependency(compile_args: true, includes: true)
+tcl_hdr_dep = tcl_dep.partial_dependency(compile_args: true, includes: true)
+deps += tcl_hdr_dep
 if tcl_dep.type_name() == 'internal'
   # Subproject fallback: stubs library is already part of tcl_dep
   deps += tcl_dep.partial_dependency(links: true)
@@ -98,16 +99,23 @@ teaconf.set('PACKAGE_VERSION', meson.project_version())
 conf.set_quoted('PACKAGE_NAME',    meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
 
+# Polyfill checks look only at Tcl's headers (has_header_symbol compiles but
+# doesn't link: the symbol counts whether tclDecls.h declares it or, in stubs
+# mode, #defines it), so they give the same answer for 8.6 and 9, stubs or not,
+# a shared or static-only libtcl, and a subproject fallback (whose internal
+# dependency is usable here once reduced to its include/compile args).  Don't
+# use has_function: it links against libtcl, which fails spuriously when that
+# needs more than -ltcl (a static libtcl9.0.a wants -lz -lpthread ...), and a
+# failed link wrongly enables a shim whose typedefs then clash with Tcl 9's.
+if 'tip445' in tea_want_shims
+  conf.set10('TIP445_SHIM', not cc.has_header_symbol('tcl.h', 'Tcl_FetchInternalRep', dependencies: tcl_hdr_dep))
+endif
+
+if 'Tcl_GetBytesFromObj' in tea_want_shims
+  conf.set10('GETBYTES_SHIM', not cc.has_header_symbol('tcl.h', 'Tcl_GetBytesFromObj', dependencies: tcl_hdr_dep))
+endif
+
 if tcl_dep.type_name() != 'internal'
-  # Compile checks require an external dependency
-  if 'tip445' in tea_want_shims
-    conf.set10('TIP445_SHIM', not cc.has_function('Tcl_FetchInternalRep', prefix: '#include <tcl.h>', dependencies: tcl_dep))
-  endif
-
-  if 'Tcl_GetBytesFromObj' in tea_want_shims
-    conf.set10('GETBYTES_SHIM', not cc.has_function('Tcl_GetBytesFromObj', prefix: '#include <tcl.h>', dependencies: tcl_dep))
-  endif
-
   if not cc.compiles('#include <tcl.h>\nTcl_Size foo=0;', dependencies: tcl_dep)
     conf.set('Tcl_Size',  'int')
   endif
@@ -147,13 +155,6 @@ else
   if is_variable('tea_want_tommath') and tea_want_tommath
     tcl_has_internal_tommath = true
     tcl_mp_digit_size = cc.sizeof('size_t')
-  endif
-  if 'tip445' in tea_want_shims
-    conf.set10('TIP445_SHIM', false)
-  endif
-
-  if 'Tcl_GetBytesFromObj' in tea_want_shims
-    conf.set10('GETBYTES_SHIM', false)
   endif
 endif
 
