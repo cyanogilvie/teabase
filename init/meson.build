@@ -107,13 +107,12 @@ conf.set_quoted('PACKAGE_VERSION', meson.project_version())
 # use has_function: it links against libtcl, which fails spuriously when that
 # needs more than -ltcl (a static libtcl9.0.a wants -lz -lpthread ...), and a
 # failed link wrongly enables a shim whose typedefs then clash with Tcl 9's.
-if 'tip445' in tea_want_shims
-  conf.set10('TIP445_SHIM', not cc.has_header_symbol('tcl.h', 'Tcl_FetchInternalRep', dependencies: tcl_hdr_dep))
-endif
-
-if 'Tcl_GetBytesFromObj' in tea_want_shims
-  conf.set10('GETBYTES_SHIM', not cc.has_header_symbol('tcl.h', 'Tcl_GetBytesFromObj', dependencies: tcl_hdr_dep))
-endif
+#
+# They're cheap, so they run whether or not the project lists the shim in
+# tea_want_shims: teabase's own sources (instance_tracking.c) include tip445.h,
+# and including tip445.h / getbytes.h is a no-op where Tcl has the API.
+conf.set10('TIP445_SHIM', not cc.has_header_symbol('tcl.h', 'Tcl_FetchInternalRep', dependencies: tcl_hdr_dep))
+conf.set10('GETBYTES_SHIM', not cc.has_header_symbol('tcl.h', 'Tcl_GetBytesFromObj', dependencies: tcl_hdr_dep))
 
 if tcl_dep.type_name() != 'internal'
   if not cc.compiles('#include <tcl.h>\nTcl_Size foo=0;', dependencies: tcl_dep)

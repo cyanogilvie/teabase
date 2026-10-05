@@ -1,4 +1,6 @@
+#include <config.h>
 #include <instance_tracking.h>
+#include "tip445.h"	// Tcl_FreeInternalRep on Tcl 8.6
 
 void register_instance(struct tracked_instances* instances, Tcl_Obj* obj, void* inst /* if NULL: use hash tracking */)
 {
