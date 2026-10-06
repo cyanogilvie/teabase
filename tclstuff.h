@@ -29,9 +29,9 @@
 		return TCL_ERROR;											\
 	} while(0)
 
-#define THROW_PRINTF( fmtstr, ... )														\
+#define THROW_PRINTF( ... )         														\
 	do {																				\
-		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), __VA_ARGS__));		\
+		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf(__VA_ARGS__));					\
 		return TCL_ERROR;																\
 	} while(0)
 
@@ -50,9 +50,9 @@
 		goto label;														\
 	} while(0)
 
-#define THROW_PRINTF_LABEL( label, var, fmtstr, ... )									\
+#define THROW_PRINTF_LABEL( label, var, ... )        									\
 	do {																				\
-		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf((fmtstr), __VA_ARGS__));		\
+		if (interp) Tcl_SetObjResult(interp, Tcl_ObjPrintf(__VA_ARGS__));					\
 		var = TCL_ERROR;																\
 		goto label;																		\
 	} while(0)
