@@ -23,9 +23,16 @@
 			(Tcl_ObjCmdProc *) c_cmd, \
 			(ClientData *) NULL, NULL )
 
+// THROW_ERROR / THROW_ERROR_LABEL: the args are strings that are
+// concatenated to form the error message, which replaces the interp result
+// (like THROW_PRINTF).  Tcl_ResetResult isn't used since that would also clear
+// an -errorcode set just before the throw.
 #define THROW_ERROR( ... )											\
 	do {															\
-		if (interp) Tcl_AppendResult(interp, __VA_ARGS__, NULL);	\
+		if (interp) {												\
+			Tcl_SetObjResult(interp, Tcl_NewObj());					\
+			Tcl_AppendResult(interp, __VA_ARGS__, NULL);			\
+		}															\
 		return TCL_ERROR;											\
 	} while(0)
 
@@ -45,7 +52,10 @@
 
 #define THROW_ERROR_LABEL( label, var, ... )							\
 	do {																\
-		if (interp) Tcl_AppendResult(interp, __VA_ARGS__, NULL);		\
+		if (interp) {													\
+			Tcl_SetObjResult(interp, Tcl_NewObj());						\
+			Tcl_AppendResult(interp, __VA_ARGS__, NULL);				\
+		}																\
 		var = TCL_ERROR;												\
 		goto label;														\
 	} while(0)
