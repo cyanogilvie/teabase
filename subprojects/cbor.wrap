@@ -1,0 +1,8 @@
+[wrap-git]
+clone-recursive = true
+url = https://github.com/cyanogilvie/cbor
+revision = v1.2
+depth = 1
+
+[provide]
+dependency_names = cbor
